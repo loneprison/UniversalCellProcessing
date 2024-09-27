@@ -1,0 +1,10 @@
+{
+    "extends": "../soil-ts/tsconfig.json",
+    "type": "module",
+    "compilerOptions": {
+        "paths": {
+            "soil-ts": ["../soil-ts/soil.tsx"]
+        }
+    },
+    "include": ["../soil-ts/**/*.tsx","./**/*.tsx"]
+}

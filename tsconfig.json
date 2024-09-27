@@ -1,0 +1,10 @@
+{
+    "extends": "./soil-ts/tsconfig.json",
+    "compilerOptions": {
+        "paths": {
+            "soil-ts": ["./soil-ts/soil.tsx"],
+            "utilsLibrary": ["./utilsLibrary/utilsLibrary.ts"]
+        }
+    },
+    "include": ["./soil-ts/**/*.tsx", "src/*.tsx","./utilsLibrary/**/*.tsx"]
+}
