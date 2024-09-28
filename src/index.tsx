@@ -10,8 +10,13 @@ let activeItem = _.getActiveComp();
 //function a(){
 //return ULib.getBlendingModeByName("正常")
 //}
+if (activeItem) {
+    const layer_1 = ULib.addAdjustmentLayer(activeItem, true);
+    _.addProperty(layer_1.effect,["F's SelectColor"]);
+    _.setPropertyValueAlone
+    _.setPropertiesValues
+}
 
-activeItem && ULib.addAdjustmentLayer(activeItem, true);
 
 //思路笔记
 //存json
@@ -23,7 +28,7 @@ activeItem && ULib.addAdjustmentLayer(activeItem, true);
 //考虑添加以下函数
 //复制图层(指定数量)
 //创建固态层(指定数量)
-//创建调整图层(指定数量，可选是否用形状图层替代固态层作为调整图层)
+//创建调整图层(指定数量，可选是否用形状图层替代固态层作为调整图层) √
 //添加效果，并且如果传入二级参数可以更改效果参数
 //根据上一个函数写一个读取数组批量添加效果
 //设置混合模式(半解决)

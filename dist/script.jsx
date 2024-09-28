@@ -1,14 +1,57 @@
-// Raymond Yan (raymondclr@foxmail.com / qq: 1107677019) - 2024年9月26日 下午10:02:38
+// Raymond Yan (raymondclr@foxmail.com / qq: 1107677019) - 2024年9月28日 上午1:30:26
 // 哔哩哔哩：https://space.bilibili.com/634669（无名打字猿）
 // 爱发电：https://afdian.net/a/raymondclr
 // 脚本作者：loneprison
 (function() {
+    var objectProto = Object.prototype;
+    var hasOwnProperty = objectProto.hasOwnProperty;
+    var nativeToString = objectProto.toString;
+    function has(object, key) {
+        return object != null && hasOwnProperty.call(object, key);
+    }
+    function getTag(value) {
+        if (value == null) {
+            return value === undefined ? "[object Undefined]" : "[object Null]";
+        }
+        return nativeToString.call(value);
+    }
+    function isArray(value) {
+        return getTag(value) == "[object Array]";
+    }
+    function isString(value) {
+        var type = typeof value;
+        return type === "string" || type === "object" && value != null && !isArray(value) && getTag(value) == "[object String]";
+    }
     function createIsNativeType(nativeObject) {
         return function(value) {
             return value != null && value instanceof nativeObject;
         };
     }
     var isCompItem = createIsNativeType(CompItem);
+    function isLayer(value) {
+        return has(value, "containingComp") && isCompItem(value.containingComp) && value.parentProperty === null && value.propertyDepth === 0;
+    }
+    var isMaskPropertyGroup = createIsNativeType(MaskPropertyGroup);
+    var isPropertyGroup = createIsNativeType(PropertyGroup);
+    function isAddableProperty(value) {
+        return isPropertyGroup(value) || isMaskPropertyGroup(value) || isLayer(value);
+    }
+    function addProperty(rootProperty, path) {
+        var index = 0;
+        var length = path.length;
+        var nested = rootProperty;
+        while (nested && isAddableProperty(nested) && index < length) {
+            var name = path[index++];
+            var next = nested.property(name);
+            if (next) {
+                nested = next;
+            } else if (nested.canAddProperty(name)) {
+                nested = nested.addProperty(name);
+            }
+        }
+        return index && index === length ? nested : undefined;
+    }
+    var isProperty = createIsNativeType(Property);
     function getActiveItem() {
         return app.project.activeItem;
     }
@@ -16,54 +59,57 @@
         var item = getActiveItem();
         return isCompItem(item) ? item : undefined;
     }
-    function getBlendingModeByName(name) {
-        var blendingModes = {
-            "正常": BlendingMode.NORMAL,
-            "溶解": BlendingMode.DISSOLVE,
-            "动态抖动溶解": BlendingMode.DANCING_DISSOLVE,
-            "变暗": BlendingMode.DARKEN,
-            "相乘": BlendingMode.MULTIPLY,
-            "颜色加深": BlendingMode.COLOR_BURN,
-            "经典颜色加深": BlendingMode.CLASSIC_COLOR_BURN,
-            "线性加深": BlendingMode.LINEAR_BURN,
-            "较深的颜色": BlendingMode.DARKER_COLOR,
-            "相加": BlendingMode.ADD,
-            "变亮": BlendingMode.LIGHTEN,
-            "屏幕": BlendingMode.SCREEN,
-            "颜色减淡": BlendingMode.COLOR_DODGE,
-            "经典颜色减淡": BlendingMode.CLASSIC_COLOR_DODGE,
-            "线性减淡": BlendingMode.LINEAR_DODGE,
-            "较浅的颜色": BlendingMode.LIGHTER_COLOR,
-            "叠加": BlendingMode.OVERLAY,
-            "柔光": BlendingMode.SILHOUETTE_LUMA,
-            "强光": BlendingMode.HARD_LIGHT,
-            "线性光": BlendingMode.LINEAR_LIGHT,
-            "亮光": BlendingMode.VIVID_LIGHT,
-            "点光": BlendingMode.PIN_LIGHT,
-            "纯色混合": BlendingMode.HARD_MIX,
-            "差值": BlendingMode.DIFFERENCE,
-            "经典差值": BlendingMode.CLASSIC_DIFFERENCE,
-            "排除": BlendingMode.EXCLUSION,
-            "相减": BlendingMode.STENCIL_LUMA,
-            "相除": BlendingMode.DIVIDE,
-            "色相": BlendingMode.HUE,
-            "饱和度": BlendingMode.SATURATION,
-            "颜色": BlendingMode.COLOR,
-            "发光度": BlendingMode.LUMINOSITY,
-            "模板 Apha": BlendingMode.SOFT_LIGHT,
-            "模板亮度": BlendingMode.STENCIL_ALPHA,
-            "轮廓 Apha": BlendingMode.SUBTRACT,
-            "轮廓亮度": BlendingMode.SILHOUETE_ALPHA,
-            "Alpha 添加": BlendingMode.ALPHA_ADD,
-            "冷光预乘": BlendingMode.LUMINESCENT_PREMUL
-        };
-        return blendingModes[name];
+    function baseGetPropertyByIndex(value, index) {
+        return 0 < index && index <= value.numProperties ? value.property(index) : null;
+    }
+    function getProperty(rootProperty, path) {
+        var index = 0;
+        var length = path.length;
+        var nested = rootProperty;
+        while (nested && isAddableProperty(nested) && index < length) {
+            var name = path[index++];
+            nested = isString(name) ? nested.property(name) : baseGetPropertyByIndex(nested, name);
+        }
+        return index && index === length ? nested : undefined;
+    }
+    function setPropertyValue(rootProperty, path, value) {
+        var property = addProperty(rootProperty, path);
+        if (isProperty(property)) {
+            property.setValue(value);
+            return property;
+        }
+    }
+    function addAdjustmentLayer(compItem, useShapeLayer, layerName, layerColor) {
+        if (useShapeLayer === void 0) {
+            useShapeLayer = true;
+        }
+        if (layerName === void 0) {
+            layerName = "addAdjustment";
+        }
+        if (layerColor === void 0) {
+            layerColor = [ 1, 1, 1 ];
+        }
+        var newAdjust;
+        var getLayers = compItem.layers;
+        if (useShapeLayer) {
+            newAdjust = getLayers.addShape();
+            newAdjust.name = layerName;
+            var VectorsGroup = newAdjust.property("ADBE Root Vectors Group");
+            addProperty(VectorsGroup, [ "ADBE Vector Shape - Rect" ]);
+            addProperty(VectorsGroup, [ "ADBE Vector Graphic - Fill" ]);
+            getProperty(VectorsGroup, [ "ADBE Vector Shape - Rect", "ADBE Vector Rect Size" ]).expression = "[width,height]";
+            setPropertyValue(VectorsGroup, [ "ADBE Vector Graphic - Fill", "ADBE Vector Fill Color" ], layerColor);
+            newAdjust.position.expression = "[thisComp.width,thisComp.height]/2";
+        } else {
+            newAdjust = getLayers.addSolid(layerColor, layerName, compItem.width, compItem.height, 1, compItem.duration);
+        }
+        newAdjust.adjustmentLayer = true;
+        newAdjust.label = 10;
+        return newAdjust;
     }
     var activeItem = getActiveComp();
     if (activeItem) {
-        alert(a);
-    }
-    function a() {
-        return getBlendingModeByName("正常");
+        var layer_1 = addAdjustmentLayer(activeItem, true);
+        addProperty(layer_1.effect, [ "F's SelectColor" ]);
     }
 }).call(this);
