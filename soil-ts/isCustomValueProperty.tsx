@@ -1,4 +1,4 @@
-function isCustomValueProperty(property: Property): property is Property {
+function isCustomValueProperty(property: Property): boolean {
     return property.propertyValueType === PropertyValueType.CUSTOM_VALUE;
 }
 

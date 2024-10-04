@@ -1,4 +1,4 @@
-type BlendingModeString = 
+type BlendingModeString =
     | "正常"
     | "溶解"
     | "动态抖动溶解"
@@ -38,9 +38,44 @@ type BlendingModeString =
     | "Alpha 添加"
     | "冷光预乘";
 
-type TrackMatteTypeString = 
+type TrackMatteTypeString =
     | "Alpha 遮罩"
     | "Alpha 反转遮罩"
     | "亮度遮罩"
     | "亮度反转遮罩"
     | "无"
+
+
+//专门为了addEffects效果而建立的类型,AdbePath是效果的匹配名，string是属性的匹配名，第一个数值用来存value，第二个数值用来存表达式
+interface propertyExpression {
+    [key: string]: string
+};
+
+interface propertyValues{
+    [key: string]: any
+}; 
+
+interface propertyGroupObj {
+    [key: string]: {
+        matchName: string;
+        name:string;
+        isEnabled:Boolean;
+        values: {
+            [key: string]: any
+        }; 
+        expressions: propertyExpression
+    };
+}
+
+//  effectObj case
+// {
+//     effect1: {
+//         effectName: "F's SelectColor",
+//         propertyValue: {
+//             "F's SelectColor-0001": true,
+//         },
+//         propertyExpression: {
+//             "F's SelectColor-0003": `true`,
+//         }
+//     }
+// };

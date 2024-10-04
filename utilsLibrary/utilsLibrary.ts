@@ -1,5 +1,10 @@
 export { default as addAdjustmentLayer } from './addAdjustmentLayer';
+export { default as addEffects } from './addEffects';
 export { default as copyToClipboard } from './copyToClipboard';
 export { default as duplicateLayers } from './duplicateLayers';
 export { default as getBlendingModeByName } from './getBlendingModeByName';
-export { default as getTrackMatteType } from './getTrackMatteType';
+export { default as getPropertiesObject } from './getPropertiesObject';
+export { default as getTrackMatteTypeByName } from './getTrackMatteTypeByName';
+export { default as isOriginalPropertyValue } from './isOriginalPropertyValue';
+export { default as removeTargetValues } from './removeTargetValues';
+export { default as setProertiesExpressions } from './setProertiesExpressions';

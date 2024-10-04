@@ -1,4 +1,4 @@
-function copyToClipboard(content:string) {
+function copyToClipboard(content:string):void {
     var cmd;
     var isWindows = $.os.indexOf("Windows") !== -1;
 

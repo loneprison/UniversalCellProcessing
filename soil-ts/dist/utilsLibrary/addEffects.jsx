@@ -1,25 +1,21 @@
 import { addPropertyAlone, forOwn, isPropertyGroup, setPropertiesValues } from "soil-ts";
 import setProertiesExpressions from "./setProertiesExpressions";
-
-//该function只能配合指定格式的Obj使用
-function addeffects(layer: Layer, effectObj: propertyGroupObj):void {
-    const effcts = layer.property("ADBE Effect Parade")
-
-    forOwn(effectObj, ({name, values, expressions, matchName }, key) => {
-        const newEffect = addPropertyAlone(effcts, [matchName]);
-
+function addeffects(layer, effectObj) {
+    var effcts = layer.property("ADBE Effect Parade");
+    forOwn(effectObj, function (_a, key) {
+        var name = _a.name, values = _a.values, expressions = _a.expressions, matchName = _a.matchName;
+        var newEffect = addPropertyAlone(effcts, [matchName]);
         if (isPropertyGroup(newEffect)) {
-            if(name){
+            if (name) {
                 newEffect.name = name;
             }
             if (values) {
                 setPropertiesValues(newEffect, values);
             }
             if (expressions) {
-                setProertiesExpressions(newEffect,expressions)
+                setProertiesExpressions(newEffect, expressions);
             }
         }
     });
 }
-
 export default addeffects;
