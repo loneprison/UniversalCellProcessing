@@ -9,8 +9,8 @@ function getPropertylesObject(rootProperty, path) {
         for (var i = 1; i <= propertyGroup.numProperties; i++) {
             var property = propertyGroup.property(i);
             var keyName = "{".concat(i, " | ").concat(property.name, " | ").concat(property.matchName).concat(property.canSetEnabled ? " | " + property.enabled : "", "}");
-            if (!isLayerStyles && isPropertyGroup(property) ||
-                isLayerStyles && property.canSetEnabled ||
+            if ((!isLayerStyles && isPropertyGroup(property)) ||
+                (isLayerStyles && property.canSetEnabled) ||
                 property.matchName == "ADBE Blend Options Group") {
                 var nested = object.nestedProperty || (object.nestedProperty = {});
                 nested[keyName] = getPropertylesObject(property, undefined);

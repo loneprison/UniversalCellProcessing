@@ -1,147 +1,40 @@
-import * as _ from "soil-ts";
-import * as ULib from "utilsLibrary";
+import * as _ from 'soil-ts';
+import * as ULib from 'utilsLibrary';
 // utilsLibrary基于Soil二次开发
-
 
 // let UISource = {
 //     button1: ["myButton", [0, 0, 100, 25], "按钮"],
 //     button2: ["myButton", [0, 0, 100, 25], "按钮"]
 // }
 
-
 // let elements = _.tree.parse(UISource);
 
-
-
-
 let activeItem = _.getActiveComp();
-let fristLayet = _.getFirstSelectedLayer();
-_.getFirstSelectedLayer
+let firstLayer = _.getFirstSelectedLayer();
 
-if (activeItem) {
-    if (fristLayet) {
-        // const obj_1 = getEffectOfLayer(fristLayet)
-        // const obj_2 = getLayerStylesOfLayer(fristLayet)
-        const obj_3 = getPropertylesObject(fristLayet, ["ADBE Effect Parade"])
-        // const { object: effectObj, log: effectLog } = ULib.removeTargetValues(obj_1)
-        // const { object: layerStylesObj, log: layerStylesLog } = ULib.removeTargetValues(obj_2)
-        // alert(_.stringify(effectObj))
-        // alert(_.stringify(layerStylesObj))
-        alert(_.stringify(obj_3))
-    }
-}
-
-function getPropertylesObject(rootProperty: _PropertyClasses, path?: AdbePath): AnyObject | undefined {
-    const propertyGroup = path ? _.getProperty(rootProperty, path) : rootProperty;
-    if (!propertyGroup) return undefined;
-
-    const isLayerStyles = path?.length === 1 && path[0] === "ADBE Layer Styles";
-    const object: AnyObject = {};  // 初始化返回对象
-
-    if (_.isPropertyGroup(propertyGroup)) {
-        for (let i = 1; i <= propertyGroup.numProperties; i++) {
-            const property = propertyGroup.property(i);
-
-            // 检查是否需要处理该组
-            const keyName = `{${i} | ${property.name} | ${property.matchName}${property.canSetEnabled ? " | " + property.enabled : ""}}`;
-
-            // 图层样式特殊处理或正常 PropertyGroup 处理
-            if (!isLayerStyles && _.isPropertyGroup(property) ||        //正常的属性
-                isLayerStyles && property.canSetEnabled ||              //图层样式下的子级需要特殊处理
-                property.matchName == "ADBE Blend Options Group") {     //图层样式下的混合选项是个特殊情况
-                // 初始化 nestedProperty 仅在需要时进行
-                const nested = object.nestedProperty ||= {};
-                nested[keyName] = getPropertylesObject(property, undefined);
-            }
-            // Property 的处理
-            else if (_.isProperty(property) && property.isModified) {
-                // 初始化 values
-                object.values ||= {};
-                object.values[property.matchName] = _.isNoValueProperty(property)
-                    ? "!value 属性在值类型为 NO_VALUE 的 Property 上不可读!"
-                    : _.isCustomValueProperty(property)
-                        ? "!value 属性在值类型为 CUSTOM_VALUE 的 Property 上不可读!"
-                        : property.value;
-
-                // 初始化 expressions
-                if (property.expressionEnabled) {
-                    object.expressions ||= {};
-                    object.expressions[property.matchName] = property.expression;
-                }
-            }
+if (firstLayer && _.isRasterLayer(firstLayer)) {
+    let object:AnyObject = {}
+    for (let i = 1; i < firstLayer.numProperties; i++) {
+        const property = firstLayer.property(i)
+        const name = property.name
+        if (property) {
+            object[name] = ULib.getPropertyListObject(firstLayer, [name]);
         }
     }
-
-    return object;
+    $.writeln(_.stringify(object))
 }
 
+function getLayerStylesObject(rasterLayer: RasterLayer) {
+    return ULib.getPropertyListObject(rasterLayer, ['ADBE Layer Styles']);
+}
 
+function getEffectGroupObject(rasterLayer: RasterLayer) {
+    return ULib.getPropertyListObject(rasterLayer, ['ADBE Effect Parade']);
+}
 
-
-
-
-
-// //我觉得获取效果和获取图层样式有不少逻辑可以合并，所以暂且不放入ulib中
-// function getLayerStylesOfLayer(layer: Layer): propertyGroupObj {
-//     const layerStyles = layer.property("ADBE Layer Styles")
-//     const object: propertyGroupObj = {};
-
-//     if (layerStyles.canSetEnabled) {//如果图层样式是canSetEnabled则为激活状态
-//         if (_.isPropertyGroup(layerStyles)) {
-//             for (let i = 1; i <= layerStyles.numProperties; i++) {
-//                 const eachLayerStyles = layerStyles.property(i);
-//                 const matchName = eachLayerStyles.matchName;
-//                 const name = eachLayerStyles.name;
-//                 const keyName = `layerStyles_${i}`;
-//                 const isEnabled = eachLayerStyles.enabled;
-
-//                 if (_.isPropertyGroup(eachLayerStyles) &&
-//                     (eachLayerStyles.canSetEnabled || matchName == "ADBE Blend Options Group")) {
-//                     //因为“混合选项”的canSetEnabled是false所以需要做另外判断
-//                     const { values, expressions } = ULib.getPropertiesObject(eachLayerStyles);
-//                     object[keyName] = {
-//                         matchName,
-//                         name,
-//                         isEnabled,
-//                         values,
-//                         expressions
-//                     };
-//                 }
-//             }
-//         }
-//     }
-
-//     return object
-// }
-
-// function getEffectOfLayer(layer: Layer): propertyGroupObj {
-//     const effects = layer.property("ADBE Effect Parade")
-//     const object: propertyGroupObj = {};
-
-//     if (_.isPropertyGroup(effects)) {
-//         for (let i = 1; i <= effects.numProperties; i++) {
-//             const effect = effects.property(i);
-//             const matchName = effect.matchName;
-//             const name = effect.name;
-//             const keyName = `effect_${i}`;
-//             const isEnabled = effect.enabled;
-
-//             if (_.isPropertyGroup(effect)) {
-//                 const { values, expressions } = ULib.getPropertiesObject(effect);
-//                 object[keyName] = {
-//                     matchName,
-//                     name,
-//                     isEnabled,
-//                     values,
-//                     expressions
-//                 };
-//             }
-//         }
-//     }
-
-//     return object
-// }
-
+function getVectorsGroupObject(shapeLayer: ShapeLayer) {
+    return ULib.getPropertyListObject(shapeLayer, ['ADBE Root Vectors Group']);
+}
 
 //addAdjustmentLayer需要解决图层应该创建在选择图层上方的问题 -另外写代码，代码不应该在函数内部
 

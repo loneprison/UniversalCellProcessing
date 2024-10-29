@@ -2,7 +2,7 @@ import { addPropertyAlone, forOwn, isPropertyGroup, setPropertiesValues } from "
 import setProertiesExpressions from "./setProertiesExpressions";
 
 //该function只能配合指定格式的Obj使用
-function addeffects(layer: Layer, effectObj: propertyGroupObj):void {
+function addeffects(layer: Layer, effectObj: AnyObject):void {
     const effcts = layer.property("ADBE Effect Parade")
 
     forOwn(effectObj, ({name, values, expressions, matchName }, key) => {

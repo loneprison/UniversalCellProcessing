@@ -1,10 +1,10 @@
 import {forOwn,isProperty } from "soil-ts";
 
-function setProertiesExpressions(propertyGroup: PropertyGroup, Expressions: propertyExpression): void {
-    forOwn(Expressions, function (Expression: string, matchName: string) {
+function setProertiesExpressions(propertyGroup: PropertyGroup, Expressions: AnyObject): void {
+    forOwn(Expressions, function (expression: string, matchName: string) {
         const property = propertyGroup.property(matchName);
         if (isProperty(property)&&property.canSetExpression) {
-            property.expression = Expression
+            property.expression = expression
         }
     });
 }

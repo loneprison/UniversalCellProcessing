@@ -1,4 +1,4 @@
-function isIndexedGroupType(property: Property): property is Property {
+function isIndexedGroupType(property: _PropertyClasses): boolean {
     return property.propertyType == PropertyType.INDEXED_GROUP;
 }
 
