@@ -1,9 +1,6 @@
-# soil-ts
+# UniversalCellProcessing
 
-一个基于 lodash 构建的 Ae 脚本工具库
+一个基于 soil-ts 二次构建的 AE 脚本
 
-npm：https://www.npmjs.com/package/soil-ts
-
-文档：https://raymondclr.github.io/Soil/modules/soil.html
-
-![image](assets/sample.png)
+## 手动日志：
+- 20241030 首次提交到Github
