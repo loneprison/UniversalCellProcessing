@@ -3,13 +3,13 @@ import * as ULib from "utilsLibrary";
 // utilsLibrary基于Soil二次开发
 
 let activeItem = _.getActiveComp();
-let fristLayet = _.getFirstSelectedLayer();
+let firstLayer = _.getFirstSelectedLayer();
 
 // if (activeItem) {
-//     if (fristLayet) {
-//         const {effectObj,log} = getEffectOfLayer(fristLayet);
+//     if (firstLayer) {
+//         const {effectObj,log} = getEffectOfLayer(firstLayer);
 //         const newLayer  = ULib.addAdjustmentLayer(activeItem)
 //         ULib.addEffects(newLayer,effectObj)
-//         newLayer.moveBefore(fristLayet)
+//         newLayer.moveBefore(firstLayer)
 //     }
 // }

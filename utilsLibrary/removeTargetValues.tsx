@@ -1,7 +1,7 @@
 import { forOwn, indexOf, omitBy } from "soil-ts";
 
-//该方法和getPropertylesObject为强关联
-//所有间接使用过getPropertylesObject的方法都需要用此方法预先去除一遍不可读的object
+//该方法和getPropertiesObject为强关联
+//所有间接使用过getPropertiesObject的方法都需要用此方法预先去除一遍不可读的object
 function removeTargetValues(object: AnyObject): { object: AnyObject, log: AnyObject } {
     const targetStrings = [
         "!value 属性在值类型为 CUSTOM_VALUE 的 Property 上不可读!",

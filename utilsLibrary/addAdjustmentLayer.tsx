@@ -1,5 +1,5 @@
 import { addProperty, getProperty, isPropertyGroup, setPropertyValue } from "soil-ts";
-import setProertiesExpressions from "./setProertiesExpressions";
+import setPropertiesExpressions from "./setPropertiesExpressions";
 
 function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, layerName: string = "adjustment", layerColor: ThreeDColorValue = [1, 1, 1]): AVLayer|ShapeLayer {
     let newAdjust:AVLayer|ShapeLayer
@@ -11,7 +11,7 @@ function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, l
         addProperty(VectorsGroup, ['ADBE Vector Shape - Rect'])
         addProperty(VectorsGroup, ['ADBE Vector Graphic - Fill']);
         const rect = getProperty(VectorsGroup, ['ADBE Vector Shape - Rect'])
-        isPropertyGroup(rect)&&setProertiesExpressions(rect, { "ADBE Vector Rect Size": "[width,height]" })
+        isPropertyGroup(rect)&&setPropertiesExpressions(rect, { "ADBE Vector Rect Size": "[width,height]" })
         setPropertyValue(VectorsGroup, ['ADBE Vector Graphic - Fill', "ADBE Vector Fill Color"], layerColor)
 
         // 设置图层的位置和透明度

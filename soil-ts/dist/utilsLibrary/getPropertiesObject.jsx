@@ -1,5 +1,5 @@
 import { getProperty, isCustomValueProperty, isNoValueProperty, isProperty, isPropertyGroup } from "soil-ts";
-function getPropertylesObject(rootProperty, path) {
+function getPropertiesObject(rootProperty, path) {
     var propertyGroup = path ? getProperty(rootProperty, path) : rootProperty;
     if (!propertyGroup)
         return undefined;
@@ -13,7 +13,7 @@ function getPropertylesObject(rootProperty, path) {
                 isLayerStyles && property.canSetEnabled ||
                 property.matchName == "ADBE Blend Options Group") {
                 var nested = object.nestedProperty || (object.nestedProperty = {});
-                nested[keyName] = getPropertylesObject(property, undefined);
+                nested[keyName] = getPropertiesObject(property, undefined);
             }
             else if (isProperty(property) && property.isModified) {
                 object.values || (object.values = {});
@@ -31,4 +31,4 @@ function getPropertylesObject(rootProperty, path) {
     }
     return object;
 }
-export default getPropertylesObject;
+export default getPropertiesObject;

@@ -1,7 +1,7 @@
 import PropertyParser from "./PropertyParser";
 
 function getLayerSettingsObject(layer: Layer) {
-    const onject = {
+    const object = {
         adjustmentLayer: false,         // 设置调整图层
         audioEnabled: true,             // 激活音频
         autoOrient: 4212,               // 图层自动定向
@@ -37,7 +37,7 @@ function getLayerSettingsObject(layer: Layer) {
         width: 3000,                    // 图层宽度
     }
 
-    return onject
+    return object
 }
 
 export default getLayerSettingsObject
