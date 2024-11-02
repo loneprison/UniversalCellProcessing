@@ -18,7 +18,7 @@ export default {
                         comments: false,
                         keep_quoted_props: true,
                         keep_numbers: true,
-                        preamble: `// Raymond Yan (raymondclr@foxmail.com / qq: 1107677019) - ${new Date().toLocaleString()}\n// 哔哩哔哩：https://space.bilibili.com/634669（无名打字猿）\n// 爱发电：https://afdian.net/a/raymondclr\n// 脚本作者：loneprison`,
+                        preamble: `// 本脚本基于Soil开发\n// Soil作者:  Raymond Yan (raymondclr@foxmail.com / qq: 1107677019)\n// Soil Github: https://github.com/RaymondClr/Soil\n\n// 脚本作者: loneprison (qq: 769049918)\n// Github: {未填写/未公开}\n// - ${new Date().toLocaleString()}\n`,
                         wrap_func_args: false,
                     },
                 }),

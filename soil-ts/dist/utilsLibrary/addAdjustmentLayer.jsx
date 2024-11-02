@@ -1,5 +1,5 @@
 import { addProperty, getProperty, isPropertyGroup, setPropertyValue } from "soil-ts";
-import setProertiesExpressions from "./setProertiesExpressions";
+import setPropertiesExpressions from "./setPropertiesExpressions";
 function addAdjustmentLayer(compItem, useShapeLayer, layerName, layerColor) {
     if (useShapeLayer === void 0) { useShapeLayer = true; }
     if (layerName === void 0) { layerName = "adjustment"; }
@@ -13,7 +13,7 @@ function addAdjustmentLayer(compItem, useShapeLayer, layerName, layerColor) {
         addProperty(VectorsGroup, ['ADBE Vector Shape - Rect']);
         addProperty(VectorsGroup, ['ADBE Vector Graphic - Fill']);
         var rect = getProperty(VectorsGroup, ['ADBE Vector Shape - Rect']);
-        isPropertyGroup(rect) && setProertiesExpressions(rect, { "ADBE Vector Rect Size": "[width,height]" });
+        isPropertyGroup(rect) && setPropertiesExpressions(rect, { "ADBE Vector Rect Size": "[width,height]" });
         setPropertyValue(VectorsGroup, ['ADBE Vector Graphic - Fill', "ADBE Vector Fill Color"], layerColor);
         newAdjust.position.expression = '[thisComp.width,thisComp.height]/2';
     }

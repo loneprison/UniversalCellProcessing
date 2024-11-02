@@ -1,6 +1,6 @@
 import { addPropertyAlone, forOwn, isPropertyGroup, setPropertiesValues } from "soil-ts";
-import setProertiesExpressions from "./setProertiesExpressions";
-function addeffects(layer, effectObj) {
+import setPropertiesExpressions from "./setPropertiesExpressions";
+function addEffects(layer, effectObj) {
     var effcts = layer.property("ADBE Effect Parade");
     forOwn(effectObj, function (_a, key) {
         var name = _a.name, values = _a.values, expressions = _a.expressions, matchName = _a.matchName;
@@ -13,9 +13,9 @@ function addeffects(layer, effectObj) {
                 setPropertiesValues(newEffect, values);
             }
             if (expressions) {
-                setProertiesExpressions(newEffect, expressions);
+                setPropertiesExpressions(newEffect, expressions);
             }
         }
     });
 }
-export default addeffects;
+export default addEffects;

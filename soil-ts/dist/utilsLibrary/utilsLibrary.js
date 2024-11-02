@@ -1,10 +1,14 @@
 export { default as addAdjustmentLayer } from './addAdjustmentLayer';
 export { default as addEffects } from './addEffects';
+export { default as canSetTimeRemapEnabled } from './canSetTimeRemapEnabled';
 export { default as copyToClipboard } from './copyToClipboard';
 export { default as duplicateLayers } from './duplicateLayers';
 export { default as getBlendingModeByName } from './getBlendingModeByName';
-export { default as getPropertiesObject } from './getPropertiesObject';
+export { default as getKeyframeObjects } from './getKeyframeObjects';
+export { default as getLayerSettingsObject } from './getLayerSettingsObject';
+export { default as getPropertyListObject } from './getPropertyListObject';
 export { default as getTrackMatteTypeByName } from './getTrackMatteTypeByName';
-export { default as isOriginalPropertyValue } from './isOriginalPropertyValue';
+export { default as PropertyParser } from './PropertyParser';
 export { default as removeTargetValues } from './removeTargetValues';
-export { default as setProertiesExpressions } from './setProertiesExpressions';
+export { default as setKeyframeValuesToProperty } from './setKeyframeValuesToProperty';
+export { default as setPropertiesExpressions } from './setPropertiesExpressions';

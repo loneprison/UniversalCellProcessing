@@ -44,3 +44,6 @@ type TrackMatteTypeString =
     | "亮度遮罩"
     | "亮度反转遮罩"
     | "无"
+
+
+declare type KeyframeWithoutProperty = Omit<Keyframe, 'property'>;

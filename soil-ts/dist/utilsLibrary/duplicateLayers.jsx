@@ -3,7 +3,7 @@ function duplicateLayers(getLayer, quantity, includesSelf) {
     if (includesSelf === void 0) { includesSelf = true; }
     var layers = includesSelf ? [getLayer] : [];
     for (var i = 0; i < quantity; i++) {
-        layers.push(getLayer.duplicate());
+        layers.push(getLayer = getLayer.duplicate());
     }
     return layers;
 }

@@ -1,5 +1,19 @@
 import { getProperty, isCustomValueProperty, isEmpty, isMaskPropertyGroup, isNamedGroupType, isNoValueProperty, isProperty, isPropertyGroup, isUndefined, padStart, tree } from "soil-ts";
 
+/*
+    该模块属于功能缺失的状态
+    实在不想写了先搁置
+    目前已知问题
+        1.无法读取关键帧，而比较重要的标记和时间重映射都属于key，所以都无法被获取
+        2.无法读取例如摄像机属性和灯光属性设置，因为他们不属于PropertyGroup
+        3.无法读取文本属性，会中途报错
+        4.当位置属性没开启分离状态时候，分离状态的属性值会被读取为"propertyValue": 0,但按理说这种情况就不应该被读取
+        5.当图层样式未开启的状态，混合选项依然会被错误的读取出来
+    暂时想到的解决方案
+        1.重构isSpecifiedProperty的部分，将这部分暴露出去做手动调整，人为控制属性
+        2.应当完善getPropertyListObject的开头处理部分，如果这里不解决前面读不出来的属性全都会被一键带过
+*/
+
 class PropertySerializer {
     public static getPropertyObject(property: Property): AnyObject {
         const object: AnyObject = {};
