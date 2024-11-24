@@ -1,6 +1,6 @@
 import { getKeyframeValues, map } from "soil-ts"
 
-function getKeyframeObjects(property: Property): Array<KeyframeWithoutProperty> {
+function getKeyframeObjects(property: CanSetValueProperty): Array<KeyframeWithoutProperty> {
     const KeyframeArray = getKeyframeValues(property)
     return map(KeyframeArray, (Keyframe) => {
         return {

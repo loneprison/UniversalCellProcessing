@@ -1,27 +1,16 @@
 {
-  "name": "soil",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.tsx",
-  "scripts": {
-    "build": "rollup -c"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "soil": "file:",
-    "ts-morph": "^23.0.0",
-    "typescript": "4.9"
-  },
-  "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.0",
-    "@rollup/plugin-typescript": "^11.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.7.0",
-    "@typescript-eslint/parser": "^8.7.0",
-    "eslint": "^9.11.1",
-    "rollup": "^3.18.0",
-    "tslib": "^2.5.0",
-    "types-for-adobe": "^7.0.12"
-  }
+    "scripts": {
+        "build": "rollup -c",
+        "watch": "node scripts/watch.js",
+        "getIndex": "node scripts/getIndex.js",
+        "clean": "node scripts/clean.js"
+    },
+    "devDependencies": {
+        "soil-ts": "*",
+        "@rollup/plugin-terser": "*",
+        "@rollup/plugin-typescript": "*",
+        "rollup": "*",
+        "tslib": "*",
+        "chokidar": "*"
+    }
 }

@@ -38,7 +38,7 @@ class PropertySerializer {
 
 
 class PropertyParser {
-    private getPropertyGroupMetadata(propertyGroup: _PropertyClasses): AnyObject {
+    private getPropertyGroupMetadata(propertyGroup: PropertyGroup): AnyObject {
         const object: AnyObject = {};
         if (propertyGroup.canSetEnabled) object.enabled = propertyGroup.enabled
         if (!isNamedGroupType(propertyGroup.propertyGroup(1))) object.name = propertyGroup.name;

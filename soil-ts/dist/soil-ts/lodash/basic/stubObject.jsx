@@ -1,4 +1,0 @@
-function stubObject() {
-    return {};
-}
-export default stubObject;

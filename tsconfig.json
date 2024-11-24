@@ -1,10 +1,15 @@
 {
-    "extends": "./soil-ts/tsconfig.json",
     "compilerOptions": {
+        // The following are necessary compilation options
+        "jsx": "preserve",
+        "noLib": true,
+        "types": [
+            "types-for-adobe/AfterEffects/23.0"
+        ],
         "paths": {
-            "soil-ts": ["./soil-ts/soil.tsx"],
-            "utilsLibrary": ["./utilsLibrary/utilsLibrary.ts"]
+            "utilsLibrary": [
+                "./utilsLibrary/utilsLibrary.ts"
+            ]
         }
-    },
-    "include": ["./soil-ts/**/*.tsx", "src/*.tsx","./utilsLibrary/**/*.tsx"]
+    }
 }
