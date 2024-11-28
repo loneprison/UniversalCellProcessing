@@ -19,10 +19,10 @@ if (firstLayer && layer1 && _.isRasterLayer(firstLayer) && _.isRasterLayer(layer
     if (_.isProperty(timeRemap) && _.isProperty(timeRemap2)) {
 
         layer1.timeRemapEnabled = true
-        // if (_.canSetPropertyValue(timeRemap)) {
+         if (_.canSetPropertyValue(timeRemap)) {
             ul.setKeyframeValuesToProperty(timeRemap2, ul.getKeyframeObjects(timeRemap))
             $.writeln(_.stringify(ul.getKeyframeObjects(firstLayer.marker)))
-        // }
+         }
     }
 }
 

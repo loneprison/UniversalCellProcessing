@@ -1,4 +1,10 @@
-// 2024/11/25 01:40:33
+// 本脚本基于Soil开发
+// Soil作者:  Raymond Yan (raymondclr@foxmail.com / qq: 1107677019)
+// Soil Github: https://github.com/RaymondClr/Soil
+
+// 脚本作者: loneprison (qq: 769049918)
+// Github: {未填写/未公开}
+// - 2024/11/28 14:05:02
 
 (function() {
     var objectProto = Object.prototype;
@@ -83,11 +89,57 @@
         var result = object == null ? undefined : baseGet(object, path);
         return result === undefined ? defaultValue : result;
     }
+    function forEach(array, iteratee) {
+        var index = -1;
+        var length = array.length;
+        while (++index < length) {
+            if (iteratee(array[index], index, array) === false) {
+                break;
+            }
+        }
+        return array;
+    }
+    function createIsNativeType(nativeObject) {
+        return function(value) {
+            return value != null && value instanceof nativeObject;
+        };
+    }
+    var isCompItem = createIsNativeType(CompItem);
+    function getActiveItem() {
+        return app.project.activeItem;
+    }
+    function getActiveComp() {
+        var item = getActiveItem();
+        return isCompItem(item) ? item : undefined;
+    }
     function createGetAppProperty(path) {
         return function() {
             return get(app, path);
         };
     }
-    var getFirstSelectedLayer = createGetAppProperty([ "project", "activeItem", "selectedLayers", "0" ]);
-    getFirstSelectedLayer();
+    var getSelectedLayers = createGetAppProperty([ "project", "activeItem", "selectedLayers" ]);
+    function setUndoGroup(undoString, func) {
+        app.beginUndoGroup(undoString);
+        func();
+        app.endUndoGroup();
+    }
+    function main() {
+        var selectedLayers = getSelectedLayers();
+        var activeComp = getActiveComp();
+        if (selectedLayers && activeComp) {
+            var frameDuration = 1 / activeComp.frameRate;
+            var layerDuration_1 = frameDuration;
+            selectedLayers.sort(function(a, b) {
+                return b.index - a.index;
+            });
+            var currentStartTime_1 = 0;
+            forEach(selectedLayers, function(layer) {
+                layer.inPoint = currentStartTime_1;
+                layer.outPoint = currentStartTime_1 + layerDuration_1;
+                currentStartTime_1 += layerDuration_1;
+            });
+            activeComp.duration = selectedLayers.length * frameDuration;
+        }
+    }
+    setUndoGroup("SequenceLayers", main);
 }).call(this);
