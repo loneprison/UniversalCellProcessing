@@ -12,3 +12,5 @@ export { default as PropertyParser } from './PropertyParser';
 export { default as removeTargetValues } from './removeTargetValues';
 export { default as setKeyframeValuesToProperty } from './setKeyframeValuesToProperty';
 export { default as setPropertiesExpressions } from './setPropertiesExpressions';
+export { default as sortLayersByIndex } from './sortLayersByIndex';
+export { default as sortLayersByName } from './sortLayersByName';

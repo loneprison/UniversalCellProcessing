@@ -1,3 +1,21 @@
+/**
+ * 将文本内容复制到剪贴板。
+ *
+ * 根据不同操作系统（Windows 或其他）选择合适的命令来执行复制操作。
+ * 在 macOS 上使用 `pbcopy`，在 Windows 上使用 `clip`。
+ *
+ * @param {string} content 要复制的文本内容。
+ * @returns {void} 无返回值。
+ * @since 0.1.0
+ * @category Utility
+ * @example
+ *
+ * ```ts
+ * copyToClipboard("Hello, world!");
+ * // 结果：将 "Hello, world!" 复制到剪贴板。
+ * ```
+ */
+
 function copyToClipboard(content:string):void {
     var cmd;
     var isWindows = $.os.indexOf("Windows") !== -1;

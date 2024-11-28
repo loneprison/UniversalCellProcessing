@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/28 15:14:23
+// - 2024/11/29 01:43:25
 
 (function() {
     var objectProto = Object.prototype;
@@ -105,6 +105,13 @@
         };
     }
     var isCompItem = createIsNativeType(CompItem);
+    function getActiveItem() {
+        return app.project.activeItem;
+    }
+    function getActiveComp() {
+        var item = getActiveItem();
+        return isCompItem(item) ? item : undefined;
+    }
     function createGetAppProperty(path) {
         return function() {
             return get(app, path);
@@ -116,29 +123,27 @@
         func();
         app.endUndoGroup();
     }
+    function sortLayersByIndex(layerArray, order) {
+        return layerArray.sort(function(a, b) {
+            {
+                return b.index - a.index;
+            }
+        });
+    }
     function main() {
         var selectedLayers = getSelectedLayers();
-        if (selectedLayers && selectedLayers.length > 0) {
+        var activeComp = getActiveComp();
+        if (selectedLayers && activeComp) {
+            var frameDuration_1 = 1 / activeComp.frameRate;
+            var layerDuration_1 = frameDuration_1;
+            selectedLayers = sortLayersByIndex(selectedLayers);
+            var currentStartTime_1 = 0;
             forEach(selectedLayers, function(layer) {
-                if (isCompItem(layer)) {
-                    var compItem = layer;
-                    var frameDuration = 1 / compItem.frameRate;
-                    var layerDuration_1 = frameDuration;
-                    var selectedLayersInComp = compItem.selectedLayers;
-                    if (selectedLayersInComp) {
-                        selectedLayersInComp.sort(function(a, b) {
-                            return b.index - a.index;
-                        });
-                        var currentStartTime_1 = 0;
-                        forEach(selectedLayersInComp, function(layer) {
-                            layer.inPoint = currentStartTime_1;
-                            layer.outPoint = currentStartTime_1 + layerDuration_1;
-                            currentStartTime_1 += layerDuration_1;
-                        });
-                        compItem.duration = selectedLayersInComp.length * frameDuration;
-                    }
-                }
+                layer.outPoint = layerDuration_1;
+                layer.startTime = frameDuration_1 * currentStartTime_1++;
+                layer.moveToBeginning();
             });
+            activeComp.duration = selectedLayers.length * frameDuration_1;
         }
     }
     setUndoGroup("SequenceLayers", main);

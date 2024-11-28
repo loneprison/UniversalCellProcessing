@@ -10,16 +10,18 @@ function main() {
         const layerDuration = frameDuration; // 每个图层持续1帧
 
         // 按照图层 index 从大到小排序
-        selectedLayers.sort((a, b) => b.index - a.index);
+        selectedLayers = ul.sortLayersByName(selectedLayers,"desc")
 
         // 初始化开始时间
         let currentStartTime = 0;
 
         // 设置无间隙的序列排序
         _.forEach(selectedLayers, function (layer) {
-            layer.inPoint = currentStartTime; // 设置起始时间
-            layer.outPoint = currentStartTime + layerDuration; // 设置结束时间
-            currentStartTime += layerDuration; // 下一图层的开始时间直接跟随
+            layer.outPoint = layerDuration; // 设置结束时间
+            layer.startTime = frameDuration*currentStartTime++; // 下一图层的开始时间直接跟随
+
+            // 将图层移到合成的顶部，确保排序后图层位置正确
+            layer.moveToBeginning(); 
         });
 
         // 将合成时长调整为图层的总时长

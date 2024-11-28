@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/28 14:05:02
+// - 2024/11/29 01:43:26
 
 (function() {
     var objectProto = Object.prototype;
@@ -99,18 +99,38 @@
         }
         return array;
     }
+    function some(array, predicate) {
+        var index = -1;
+        var length = array.length;
+        while (++index < length) {
+            if (predicate(array[index], index, array)) {
+                return true;
+            }
+        }
+        return false;
+    }
     function createIsNativeType(nativeObject) {
         return function(value) {
             return value != null && value instanceof nativeObject;
         };
     }
     var isCompItem = createIsNativeType(CompItem);
-    function getActiveItem() {
-        return app.project.activeItem;
+    function collectionEach(collection, iteratee) {
+        var index = 0;
+        var length = collection.length + 1;
+        while (++index < length) {
+            if (iteratee(collection[index], index, collection) === false) {
+                break;
+            }
+        }
+        return collection;
     }
-    function getActiveComp() {
-        var item = getActiveItem();
-        return isCompItem(item) ? item : undefined;
+    function collectionToArray(collection) {
+        var result = Array(collection.length);
+        collectionEach(collection, function(item, index) {
+            result[index - 1] = item;
+        });
+        return result;
     }
     function createGetAppProperty(path) {
         return function() {
@@ -118,27 +138,70 @@
         };
     }
     var getSelectedLayers = createGetAppProperty([ "project", "activeItem", "selectedLayers" ]);
+    var isAVLayer = createIsNativeType(AVLayer);
+    function createIsAVLayer(callback) {
+        return function(value) {
+            return isAVLayer(value) && callback(value);
+        };
+    }
+    var isCompLayer = createIsAVLayer(function(layer) {
+        return isCompItem(layer.source);
+    });
     function setUndoGroup(undoString, func) {
         app.beginUndoGroup(undoString);
         func();
         app.endUndoGroup();
     }
+    function sortLayersByName(layerArray, order) {
+        return layerArray.sort(function(a, b) {
+            var getSortKey = function(name) {
+                var numberPart = name.match(/\d+$/);
+                var textPart = name.replace(/\d+$/, "");
+                return {
+                    number: numberPart ? parseInt(numberPart[0], 10) : NaN,
+                    text: textPart
+                };
+            };
+            var keyA = getSortKey(a.name);
+            var keyB = getSortKey(b.name);
+            if (!isNaN(keyA.number) && !isNaN(keyB.number)) {
+                return keyB.number - keyA.number;
+            } else if (!isNaN(keyA.number)) {
+                return 1;
+            } else if (!isNaN(keyB.number)) {
+                return -1;
+            }
+            return keyB.text.localeCompare(keyA.text);
+        });
+    }
+    var isAllCompLayer = function(layerArray) {
+        return !some(layerArray, function(layer) {
+            return !isCompLayer(layer);
+        });
+    };
     function main() {
         var selectedLayers = getSelectedLayers();
-        var activeComp = getActiveComp();
-        if (selectedLayers && activeComp) {
-            var frameDuration = 1 / activeComp.frameRate;
-            var layerDuration_1 = frameDuration;
-            selectedLayers.sort(function(a, b) {
-                return b.index - a.index;
-            });
-            var currentStartTime_1 = 0;
+        if (isAllCompLayer(selectedLayers)) {
             forEach(selectedLayers, function(layer) {
-                layer.inPoint = currentStartTime_1;
-                layer.outPoint = currentStartTime_1 + layerDuration_1;
-                currentStartTime_1 += layerDuration_1;
+                var comp = layer.source;
+                if (isCompItem(comp)) {
+                    var layerArray = sortLayersByName(collectionToArray(comp.layers));
+                    if (layerArray.length == 0) {
+                        return;
+                    }
+                    var currentStartTime_1 = 0;
+                    var frameDuration_1 = 1 / comp.frameRate;
+                    var layerDuration_1 = frameDuration_1;
+                    forEach(layerArray, function(layer_) {
+                        layer_.outPoint = layerDuration_1;
+                        layer_.startTime = frameDuration_1 * currentStartTime_1++;
+                        layer.moveToBeginning();
+                    });
+                    comp.duration = frameDuration_1 * currentStartTime_1;
+                }
             });
-            activeComp.duration = selectedLayers.length * frameDuration;
+        } else {
+            alert("不能选择非comp图层");
         }
     }
     setUndoGroup("SequenceLayers", main);

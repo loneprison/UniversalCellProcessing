@@ -1,3 +1,22 @@
+/**
+ * 根据混合模式名称获取对应的混合模式枚举值。
+ *
+ * 该函数根据传入的中文名称返回对应的 `BlendingMode` 枚举值，如果传入的名称不匹配任何已知的混合模式，则默认返回 `BlendingMode.NORMAL`。
+ *
+ * @param {BlendingModeString} name 混合模式的中文名称。
+ * @returns {BlendingMode} 对应的 `BlendingMode` 枚举值。
+ * @since 0.1.0
+ * @category Utility
+ * @example
+ *
+ * ```ts
+ * const blendingMode = getBlendingModeByName("溶解");
+ * // 结果：返回 BlendingMode.DISSOLVE。
+ *
+ * const defaultBlendingMode = getBlendingModeByName("不存在的混合模式");
+ * // 结果：返回 BlendingMode.NORMAL。
+ * ```
+ */
 function getBlendingModeByName(name: BlendingModeString): BlendingMode {
     const blendingModes: Record<string, BlendingMode> = {
         "正常": BlendingMode.NORMAL,
@@ -40,7 +59,7 @@ function getBlendingModeByName(name: BlendingModeString): BlendingMode {
         "冷光预乘": BlendingMode.LUMINESCENT_PREMUL,
     };
 
-    return blendingModes[name]; // 如果输入的中文叫法不匹配任何枚举值，则返回正常
+    return blendingModes[name] || BlendingMode.NORMAL; // 如果输入的中文名称不匹配任何枚举值，则返回 BlendingMode.NORMAL
 }
 
 export default getBlendingModeByName
