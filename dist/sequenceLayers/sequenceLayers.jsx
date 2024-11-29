@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/29 01:43:26
+// - 2024/11/29 15:14:51
 
 (function() {
     var objectProto = Object.prototype;
@@ -99,6 +99,32 @@
         }
         return array;
     }
+    function baseFindIndex(array, predicate, fromIndex, fromRight) {
+        var length = array.length;
+        var index = fromIndex + -1;
+        while (++index < length) {
+            if (predicate(array[index], index, array)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+    function baseIsNaN(value) {
+        return value !== value;
+    }
+    function strictIndexOf(array, value, fromIndex) {
+        var index = fromIndex - 1;
+        var length = array.length;
+        while (++index < length) {
+            if (array[index] === value) {
+                return index;
+            }
+        }
+        return -1;
+    }
+    function baseIndexOf(array, value, fromIndex) {
+        return value === value ? strictIndexOf(array, value, fromIndex) : baseFindIndex(array, baseIsNaN, fromIndex);
+    }
     function some(array, predicate) {
         var index = -1;
         var length = array.length;
@@ -108,6 +134,14 @@
             }
         }
         return false;
+    }
+    function indexOf(array, value, fromIndex) {
+        var length = array == null ? 0 : array.length;
+        if (!length) {
+            return -1;
+        }
+        var index = 0;
+        return baseIndexOf(array, value, index);
     }
     function createIsNativeType(nativeObject) {
         return function(value) {
@@ -132,6 +166,13 @@
         });
         return result;
     }
+    function getActiveItem() {
+        return app.project.activeItem;
+    }
+    function getActiveComp() {
+        var item = getActiveItem();
+        return isCompItem(item) ? item : undefined;
+    }
     function createGetAppProperty(path) {
         return function() {
             return get(app, path);
@@ -152,6 +193,13 @@
         func();
         app.endUndoGroup();
     }
+    function sortLayersByIndex(layerArray, order) {
+        return layerArray.sort(function(a, b) {
+            {
+                return b.index - a.index;
+            }
+        });
+    }
     function sortLayersByName(layerArray, order) {
         return layerArray.sort(function(a, b) {
             var getSortKey = function(name) {
@@ -165,43 +213,73 @@
             var keyA = getSortKey(a.name);
             var keyB = getSortKey(b.name);
             if (!isNaN(keyA.number) && !isNaN(keyB.number)) {
-                return keyB.number - keyA.number;
+                return keyA.number - keyB.number;
             } else if (!isNaN(keyA.number)) {
-                return 1;
-            } else if (!isNaN(keyB.number)) {
                 return -1;
+            } else if (!isNaN(keyB.number)) {
+                return 1;
             }
-            return keyB.text.localeCompare(keyA.text);
+            return keyA.text.localeCompare(keyB.text);
         });
     }
+    var getStr = function(str) {
+        return str;
+    };
+    var isWhatStr = function(str) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        return indexOf(args, str) !== -1;
+    };
     var isAllCompLayer = function(layerArray) {
         return !some(layerArray, function(layer) {
             return !isCompLayer(layer);
         });
     };
-    function main() {
-        var selectedLayers = getSelectedLayers();
-        if (isAllCompLayer(selectedLayers)) {
-            forEach(selectedLayers, function(layer) {
-                var comp = layer.source;
-                if (isCompItem(comp)) {
-                    var layerArray = sortLayersByName(collectionToArray(comp.layers));
-                    if (layerArray.length == 0) {
-                        return;
-                    }
-                    var currentStartTime_1 = 0;
-                    var frameDuration_1 = 1 / comp.frameRate;
-                    var layerDuration_1 = frameDuration_1;
-                    forEach(layerArray, function(layer_) {
-                        layer_.outPoint = layerDuration_1;
-                        layer_.startTime = frameDuration_1 * currentStartTime_1++;
-                        layer.moveToBeginning();
-                    });
-                    comp.duration = frameDuration_1 * currentStartTime_1;
-                }
-            });
+    var sortAndSetLayerTimes = function(layers, sortMode, frameDuration) {
+        var sortedLayers = sortMode === "index" ? sortLayersByIndex(layers) : sortLayersByName(layers);
+        var currentStartTime = 0;
+        forEach(sortedLayers, function(layer) {
+            layer.outPoint = frameDuration;
+            layer.startTime = frameDuration * currentStartTime++;
+            layer.moveToBeginning();
+        });
+        return sortedLayers;
+    };
+    var setCompDuration = function(comp, layers, frameDuration) {
+        comp.duration = layers.length * frameDuration;
+    };
+    function SequenceLayers(sortMode, selectMode) {
+        if (selectMode === "current") {
+            var selectedLayers = getSelectedLayers();
+            var activeComp = getActiveComp();
+            if (selectedLayers && activeComp) {
+                var frameDuration = 1 / activeComp.frameRate;
+                selectedLayers = sortAndSetLayerTimes(selectedLayers, sortMode, frameDuration);
+                setCompDuration(activeComp, selectedLayers, frameDuration);
+            }
         } else {
-            alert("不能选择非comp图层");
+            var selectedLayers = getSelectedLayers();
+            if (isAllCompLayer(selectedLayers)) {
+                forEach(selectedLayers, function(layer) {
+                    var comp = layer.source;
+                    var frameDuration = 1 / comp.frameRate;
+                    if (isCompItem(comp)) {
+                        var layerArray = sortAndSetLayerTimes(collectionToArray(comp.layers), sortMode, frameDuration);
+                        setCompDuration(comp, layerArray, frameDuration);
+                    }
+                });
+            } else {
+                alert("不能选择非comp图层");
+            }
+        }
+    }
+    function main() {
+        var sortMode = getStr("index");
+        var selectMode = getStr("current");
+        if (isWhatStr(sortMode, "index", "name") && isWhatStr(selectMode, "current", "internal")) {
+            SequenceLayers(sortMode, selectMode);
         }
     }
     setUndoGroup("SequenceLayers", main);

@@ -4,7 +4,7 @@
  * @param {string} order - 排序顺序，`asc` 为升序，`desc` 为降序
  * @returns {Layer[]} 排序后的图层数组
  */
-function sortLayersByName(layerArray: Layer[], order: 'asc' | 'desc' = 'asc'): Layer[] {
+function sortLayersByName(layerArray: Layer[], order: string = 'asc'): Layer[] {
   return layerArray.sort((a, b) => {
     // 提取图层名称中的数字部分和字符部分
     const getSortKey = (name: string) => {
