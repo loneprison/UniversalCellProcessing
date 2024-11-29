@@ -4,7 +4,7 @@
  * @param {string} order - 排序顺序，`asc` 为升序，`desc` 为降序
  * @returns {Layer[]} 排序后的图层数组
  */
-function sortLayersByIndex(layerArray: Layer[], order: 'asc' | 'desc' = 'asc'): Layer[] {
+function sortLayersByIndex(layerArray: Layer[], order: string = 'asc'): Layer[] {
   return layerArray.sort((a, b) => {
     if (order === 'asc') {
       return a.index - b.index;  // 升序
