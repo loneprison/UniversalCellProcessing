@@ -1,4 +1,4 @@
-import { getProperty, isCustomValueProperty, isEmpty, isMaskPropertyGroup, isNamedGroupType, isNoValueProperty, isProperty, isPropertyGroup, isUndefined, padStart, tree } from "soil-ts";
+import { getProperty, isCustomValueProperty, isEmpty, isIndexedGroupType, isMaskPropertyGroup, isNamedGroupType, isNoValueProperty, isProperty, isPropertyGroup, isUndefined, padStart, tree } from "soil-ts";
 
 /*
     该模块属于功能缺失的状态
@@ -41,7 +41,7 @@ class PropertyParser {
     private getPropertyGroupMetadata(propertyGroup: PropertyGroup): AnyObject {
         const object: AnyObject = {};
         if (propertyGroup.canSetEnabled) object.enabled = propertyGroup.enabled
-        if (!isNamedGroupType(propertyGroup.propertyGroup(1))) object.name = propertyGroup.name;
+        if (isNamedGroupType(propertyGroup)&&isIndexedGroupType(propertyGroup.propertyGroup(1))) object.name = propertyGroup.name;
         return object;
     }
 
@@ -62,16 +62,18 @@ class PropertyParser {
         const isLayerStyles = propertyGroup.matchName === "ADBE Layer Styles";
 
         const selfMetadata = this.getPropertyGroupMetadata(propertyGroup);
-        if (!isEmpty(selfMetadata)) object["0000 | selfProperty"] = selfMetadata;
+        if (!isEmpty(selfMetadata)) object["S0000 selfProperty"] = selfMetadata;
 
         for (let i = 1; i <= propertyGroup.numProperties; i++) {
             const property = propertyGroup.property(i);
             const matchName = property.matchName;
-            const keyName = `${padStart(i.toString(), 4, "0")} ${matchName}`;
+            let keyName = `${padStart(i.toString(), 4, "0")} ${matchName}`;
 
             if (this.isSpecifiedProperty(property, isLayerStyles)) {
+                keyName = `G${keyName}`
                 object[keyName] = this.getPropertyListObject(property, undefined);
             } else if (isProperty(property) && property.isModified) {
+                keyName = `P${keyName}`
                 object[keyName] = PropertySerializer.getPropertyObject(property);
             }
         }

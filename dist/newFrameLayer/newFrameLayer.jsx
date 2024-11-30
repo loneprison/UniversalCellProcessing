@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/29 16:19:22
+// - 2024/11/30 17:12:29
 
 (function() {
     var objectProto = Object.prototype;
@@ -12,15 +12,26 @@
     function has(object, key) {
         return object != null && hasOwnProperty.call(object, key);
     }
-    function forEach(array, iteratee) {
-        var index = -1;
-        var length = array.length;
-        while (++index < length) {
-            if (iteratee(array[index], index, array) === false) {
-                break;
+    function forOwn(object, iteratee) {
+        for (var key in object) {
+            if (has(object, key)) {
+                if (iteratee(object[key], key, object) === false) {
+                    break;
+                }
             }
         }
-        return array;
+        return object;
+    }
+    function startsWith(string, target, position) {
+        var length = string.length;
+        position = position == null ? 0 : position;
+        if (position < 0) {
+            position = 0;
+        } else if (position > length) {
+            position = length;
+        }
+        target = "".concat(target);
+        return string.slice(position, position + target.length) == target;
     }
     function createIsNativeType(nativeObject) {
         return function(value) {
@@ -36,21 +47,17 @@
     function isAddableProperty(value) {
         return isPropertyGroup(value) || isMaskPropertyGroup(value) || isLayer(value);
     }
-    function addProperty(rootProperty, path) {
+    function addPropertyAlone(rootProperty, path) {
         var index = 0;
         var length = path.length;
         var nested = rootProperty;
         while (nested && isAddableProperty(nested) && index < length) {
-            var name = path[index++];
-            var next = nested.property(name);
-            if (next) {
-                nested = next;
-            } else if (nested.canAddProperty(name)) {
-                nested = nested.addProperty(name);
-            }
+            var name = String(path[index++]);
+            nested = nested.canAddProperty(name) ? nested.addProperty(name) : nested.property(name);
         }
         return index && index === length ? nested : undefined;
     }
+    var isProperty = createIsNativeType(Property);
     function getActiveItem() {
         return app.project.activeItem;
     }
@@ -63,20 +70,88 @@
         func();
         app.endUndoGroup();
     }
+    function setPropertyValue(property, dateObject) {
+        if (has(dateObject, "propertyValue")) {
+            property.setValue(dateObject.propertyValue);
+        }
+        if (has(dateObject, "propertyExpression")) {
+            property.expression = dateObject.propertyExpression;
+        }
+    }
+    function setSelfProperty(property, dateObject) {
+        if (has(dateObject, "enabled")) {
+            property.enabled = dateObject.enabled;
+        }
+        if (has(dateObject, "name")) {
+            property.name = dateObject.name;
+        }
+    }
+    function setPropertyByDate(rootProperty, propertyData) {
+        forOwn(propertyData, function(value, key) {
+            if (startsWith(key, "S", 0)) {
+                setSelfProperty(rootProperty, value);
+                return;
+            }
+            var subProperty = addPropertyAlone(rootProperty, [ key.substring(6) ]);
+            if (startsWith(key, "G", 0)) {
+                setPropertyByDate(subProperty, value);
+            } else if (startsWith(key, "P", 0)) {
+                if (isProperty(subProperty)) {
+                    setPropertyValue(subProperty, value);
+                } else {
+                    alert("在".concat(key, "键上遇到了错误\n该属性不为Property"));
+                }
+            } else {
+                alert("在".concat(key, "键上遇到了未定义的错误\n【旧版的数据格式可能不支持】\n请检查你的脚本是否为最新"));
+                return;
+            }
+        });
+    }
     function showError(message) {
         alert(message);
     }
-    function addMultipleProperty(rootProperty, pathArray) {
-        forEach(pathArray, function(path) {
-            addProperty(rootProperty, path);
-        });
-    }
+    var frameSize = [ 1920, 1080 ];
+    var framePropertyData = {
+        "G0001 ADBE Root Vectors Group": {
+            "G0001 ADBE Vector Group": {
+                "S0000 selfProperty": {
+                    "name": "frame"
+                },
+                "G0002 ADBE Vectors Group": {
+                    "G0001 ADBE Vector Shape - Rect": {
+                        "P0002 ADBE Vector Rect Size": {
+                            "propertyExpression": "[thisComp.width,thisComp.height]"
+                        }
+                    },
+                    "G0002 ADBE Vector Shape - Rect": {
+                        "P0002 ADBE Vector Rect Size": {
+                            "propertyValue": frameSize
+                        }
+                    },
+                    "G0003 ADBE Vector Filter - Merge": {
+                        "P0001 ADBE Vector Merge Type": {
+                            "propertyValue": 5
+                        }
+                    },
+                    "G0004 ADBE Vector Graphic - Fill": {
+                        "P0004 ADBE Vector Fill Color": {
+                            "propertyValue": [ 0.13725490868092, 0.13725490868092, 0.13725490868092, 1 ]
+                        }
+                    }
+                }
+            }
+        },
+        "G0002 ADBE Transform Group": {
+            "P0001 ADBE Opacity": {
+                "propertyValue": 80
+            }
+        }
+    };
     function createFrameLayer(nowItem) {
         var shapeLayer = nowItem.layers.addShape();
         shapeLayer.name = "frame";
-        var contents = shapeLayer.property("ADBE Root Vectors Group");
-        var vectorGroup = addProperty(contents, [ "ADBE Vector Group" ]);
-        addMultipleProperty(vectorGroup, [ [ "ADBE Vector Shape - Rect" ], [ "ADBE Vector Shape - Rect" ], [ "ADBE Vector Filter - Merge" ], [ "ADBE Vector Graphic - Fill" ] ]);
+        setPropertyByDate(shapeLayer, framePropertyData);
+        shapeLayer.guideLayer = true;
     }
     function main() {
         var nowItem = getActiveComp();

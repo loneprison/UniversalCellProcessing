@@ -1,5 +1,6 @@
 import { addProperty, getProperty, isPropertyGroup, setPropertyValue } from "soil-ts";
 import setPropertiesExpressions from "./setPropertiesExpressions";
+import { setPropertyByDate } from "utilsLibrary";
 
 /**
  * 添加一个调整图层，支持形状图层或固态图层。
@@ -23,21 +24,35 @@ import setPropertiesExpressions from "./setPropertiesExpressions";
  * ```
  */
 
-function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, layerName: string = "adjustment", layerColor: ThreeDColorValue = [1, 1, 1]): AVLayer|ShapeLayer {
-    let newAdjust:AVLayer|ShapeLayer
+function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, layerName: string = "adjustment", layerColor: ThreeDColorValue = [1, 1, 1]): AVLayer | ShapeLayer {
+    let newAdjust: AVLayer | ShapeLayer
     const getLayers: LayerCollection = compItem.layers
     if (useShapeLayer) {
-        newAdjust = getLayers.addShape()
-        newAdjust.name = layerName
-        const VectorsGroup = newAdjust.property('ADBE Root Vectors Group');
-        addProperty(VectorsGroup, ['ADBE Vector Shape - Rect'])
-        addProperty(VectorsGroup, ['ADBE Vector Graphic - Fill']);
-        const rect = getProperty(VectorsGroup, ['ADBE Vector Shape - Rect'])
-        isPropertyGroup(rect)&&setPropertiesExpressions(rect, { "ADBE Vector Rect Size": "[width,height]" })
-        setPropertyValue(VectorsGroup, ['ADBE Vector Graphic - Fill', "ADBE Vector Fill Color"], layerColor)
+        const vectorDate = {
+            "S0000 selfProperty": {
+                "name": layerName
+            },
+            "G0001 ADBE Root Vectors Group": {
+                "G0001 ADBE Vector Shape - Rect": {
+                    "P0002 ADBE Vector Rect Size": {
+                        "propertyExpression": "[width,height]"
+                    }
+                },
+                "G0002 ADBE Vector Graphic - Fill": {
+                    "P0004 ADBE Vector Fill Color": {
+                        "propertyValue": [1, 1, 1, 1]
+                    }
+                }
+            },
+            "G0002 ADBE Transform Group": {
+                "P0002 ADBE Position": {
+                    "propertyExpression": "[thisComp.width,thisComp.height]/2"
+                }
+            }
+        }
 
-        // 设置图层的位置和透明度
-        newAdjust.position.expression = '[thisComp.width,thisComp.height]/2';
+        newAdjust = getLayers.addShape()
+        setPropertyByDate(newAdjust, vectorDate)
     } else {
         newAdjust = getLayers.addSolid(layerColor, layerName, compItem.width, compItem.height, 1, compItem.duration);
     }

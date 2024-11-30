@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/1 02:07:22
+// - 2024/12/1 03:23:13
 
 (function() {
     var objectProto = Object.prototype;
@@ -98,28 +98,6 @@
         var result = object == null ? undefined : baseGet(object, path);
         return result === undefined ? defaultValue : result;
     }
-    function map(array, iteratee) {
-        var index = -1;
-        var length = array == null ? 0 : array.length;
-        var result = new Array(length);
-        while (++index < length) {
-            result[index] = iteratee(array[index], index, array);
-        }
-        return result;
-    }
-    function filter(array, predicate) {
-        var index = -1;
-        var resIndex = 0;
-        var length = array == null ? 0 : array.length;
-        var result = [];
-        while (++index < length) {
-            var value = array[index];
-            if (predicate(value, index, array)) {
-                result[resIndex++] = value;
-            }
-        }
-        return result;
-    }
     function forEach(array, iteratee) {
         var index = -1;
         var length = array.length;
@@ -142,9 +120,6 @@
     }
     function isDate(value) {
         return isObjectLike(value) && getTag(value) == "[object Date]";
-    }
-    function isNil(value) {
-        return value == null;
     }
     function isString(value) {
         var type = typeof value;
@@ -173,7 +148,6 @@
         };
     }
     var IS_KEY_LABEL_EXISTS = parseFloat(app.version) > 22.5;
-    var PROPERTY_INTERPOLATION_TYPE = [ 6612, 6613, 6614 ];
     var jsonEscapes = {
         "\b": "\\b",
         "\t": "\\t",
@@ -194,18 +168,6 @@
     var isPropertyGroup = createIsNativeType(PropertyGroup);
     function isAddableProperty(value) {
         return isPropertyGroup(value) || isMaskPropertyGroup(value) || isLayer(value);
-    }
-    function getValidInterpolationTypes(property) {
-        return filter(PROPERTY_INTERPOLATION_TYPE, function(enumNumber) {
-            return property.isInterpolationTypeValid(enumNumber);
-        });
-    }
-    function isHoldInterpolationTypeOnly(property) {
-        var validInterpolationTypes = getValidInterpolationTypes(property);
-        return validInterpolationTypes.length === 1 && validInterpolationTypes[0] === KeyframeInterpolationType.HOLD;
-    }
-    function canSetKeyframeVelocity(property) {
-        return !isHoldInterpolationTypeOnly(property);
     }
     var isProperty = createIsNativeType(Property);
     function isCustomValueProperty(property) {
@@ -251,13 +213,6 @@
         });
         return result;
     }
-    function getActiveItem() {
-        return app.project.activeItem;
-    }
-    function getActiveComp() {
-        var item = getActiveItem();
-        return isCompItem(item) ? item : undefined;
-    }
     function createGetAppProperty(path) {
         return function() {
             return get(app, path);
@@ -276,12 +231,6 @@
             nested = isString(name) ? nested.property(name) : baseGetPropertyByIndex(nested, name);
         }
         return index && index === length ? nested : null;
-    }
-    var isAVLayer = createIsNativeType(AVLayer);
-    var isShapeLayer = createIsNativeType(ShapeLayer);
-    var isTextLayer = createIsNativeType(TextLayer);
-    function isRasterLayer(layer) {
-        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
     }
     function concatJson(head, partial, gap, mind, tail) {
         return gap ? head + "\n" + gap + partial.join(",\n" + gap) + "\n" + mind + tail : head + partial.join(",") + tail;
@@ -358,110 +307,16 @@
             return "null";
         }
     }
-    function mapTemporalEaseValueToClasses(keyTemporalEaseValue) {
-        return map(keyTemporalEaseValue, function(keyframeEase) {
-            var speed = keyframeEase.speed;
-            var influence = keyframeEase.influence;
-            return new KeyframeEase(speed, influence === 0 ? 0.1 : influence);
-        });
-    }
-    function setKeyframeValues(property, keyframeValues) {
-        if (keyframeValues.length === 0) {
-            return;
-        }
-        forEach(keyframeValues, function(keyframe) {
-            var keyTime = keyframe.keyTime;
-            var keyValue = keyframe.keyValue;
-            property.setValueAtTime(keyTime, keyValue);
-        });
-        var isSpatialValue = property.isSpatial && !isColorProperty(property);
-        var canSetVelocity = canSetKeyframeVelocity(property);
-        forEach(keyframeValues, function(keyframe) {
-            var keyIndex = property.nearestKeyIndex(keyframe.keyTime);
-            var keyInSpatialTangent = keyframe.keyInSpatialTangent;
-            var keyOutSpatialTangent = keyframe.keyOutSpatialTangent;
-            var keySpatialAutoBezier = keyframe.keySpatialAutoBezier;
-            var keySpatialContinuous = keyframe.keySpatialContinuous;
-            var keyInTemporalEase = keyframe.keyInTemporalEase;
-            var keyOutTemporalEase = keyframe.keyOutTemporalEase;
-            var keyTemporalContinuous = keyframe.keyTemporalContinuous;
-            var keyTemporalAutoBezier = keyframe.keyTemporalAutoBezier;
-            var keyInInterpolationType = keyframe.keyInInterpolationType;
-            var keyOutInterpolationType = keyframe.keyOutInterpolationType;
-            var keyRoving = keyframe.keyRoving;
-            var keyLabel = keyframe.keyLabel;
-            var keySelected = keyframe.keySelected;
-            if (isSpatialValue) {
-                !isNil(keyInSpatialTangent) && property.setSpatialTangentsAtKey(keyIndex, keyInSpatialTangent, keyOutSpatialTangent);
-                !isNil(keySpatialAutoBezier) && property.setSpatialAutoBezierAtKey(keyIndex, keySpatialAutoBezier);
-                !isNil(keySpatialContinuous) && property.setSpatialContinuousAtKey(keyIndex, keySpatialContinuous);
-                !isNil(keyRoving) && property.setRovingAtKey(keyIndex, keyRoving);
-            }
-            if (canSetVelocity) {
-                !isNil(keyInTemporalEase) && property.setTemporalEaseAtKey(keyIndex, mapTemporalEaseValueToClasses(keyInTemporalEase), !isNil(keyOutTemporalEase) ? mapTemporalEaseValueToClasses(keyOutTemporalEase) : void 0);
-            }
-            !isNil(keyTemporalContinuous) && property.setTemporalContinuousAtKey(keyIndex, keyTemporalContinuous);
-            !isNil(keyTemporalAutoBezier) && property.setTemporalAutoBezierAtKey(keyIndex, keyTemporalAutoBezier);
-            !isNil(keyInInterpolationType) && property.setInterpolationTypeAtKey(keyIndex, keyInInterpolationType, !isNil(keyOutInterpolationType) ? keyOutInterpolationType : void 0);
-            if (IS_KEY_LABEL_EXISTS) {
-                !isNil(keyLabel) && property.setLabelAtKey(keyIndex, keyLabel);
-            }
-            !isNil(keySelected) && property.setSelectedAtKey(keyIndex, keySelected);
-        });
-    }
-    function getKeyframeObjects(property) {
-        var KeyframeArray = getKeyframeValues(property);
-        return map(KeyframeArray, function(Keyframe) {
-            return {
-                keyTime: Keyframe.keyTime,
-                keyValue: Keyframe.keyValue,
-                keySelected: Keyframe.keySelected,
-                keyInTemporalEase: Keyframe.keyInTemporalEase,
-                keyOutTemporalEase: Keyframe.keyOutTemporalEase,
-                keyTemporalContinuous: Keyframe.keyTemporalContinuous,
-                keyTemporalAutoBezier: Keyframe.keyTemporalAutoBezier,
-                keyInInterpolationType: Keyframe.keyInInterpolationType,
-                keyOutInterpolationType: Keyframe.keyOutInterpolationType,
-                keyInSpatialTangent: Keyframe.keyInSpatialTangent,
-                keyOutSpatialTangent: Keyframe.keyOutSpatialTangent,
-                keySpatialAutoBezier: Keyframe.keySpatialAutoBezier,
-                keySpatialContinuous: Keyframe.keySpatialContinuous,
-                keyRoving: Keyframe.keyRoving,
-                keyLabel: Keyframe.keyLabel
-            };
-        });
-    }
-    var __assign = function() {
-        __assign = Object.assign || function __assign(t) {
-            for (var s, i = 1, n = arguments.length; i < n; i++) {
-                s = arguments[i];
-                for (var p in s) {
-                    if (Object.prototype.hasOwnProperty.call(s, p)) {
-                        t[p] = s[p];
-                    }
-                }
-            }
-            return t;
-        };
-        return __assign.apply(this, arguments);
-    };
-    function setKeyframeValuesToProperty(property, keyframeArray) {
-        setKeyframeValues(property, map(keyframeArray, function(keyframe) {
-            return __assign({}, keyframe);
-        }));
-    }
-    var activeItem = getActiveComp();
     var firstLayer = getFirstSelectedLayer();
-    var layer1 = activeItem === null || activeItem === void 0 ? void 0 : activeItem.layer(1);
-    if (firstLayer && layer1 && isRasterLayer(firstLayer) && isRasterLayer(layer1)) {
-        var timeRemap = getProperty(firstLayer, [ "timeRemap" ]);
-        var timeRemap2 = getProperty(layer1, [ "timeRemap" ]);
-        if (isProperty(timeRemap) && isProperty(timeRemap2)) {
-            layer1.timeRemapEnabled = true;
-            if (canSetPropertyValue(timeRemap)) {
-                setKeyframeValuesToProperty(timeRemap2, getKeyframeObjects(timeRemap));
-                $.writeln(stringify(getKeyframeObjects(firstLayer.marker)));
-            }
+    if (firstLayer) {
+        var position = getProperty(firstLayer, [ "ADBE Transform Group", "ADBE Position" ]);
+        if (isProperty(position) && canSetPropertyValue(position) && position.numKeys > 0) {
+            var keyframeObjects = getKeyframeValues(position);
+            $.writeln(stringify(keyframeObjects));
+        } else {
+            $.writeln("No keyframes found on the Position property.");
         }
+    } else {
+        $.writeln("No layer selected or invalid selection.");
     }
 }).call(this);

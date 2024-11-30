@@ -47,3 +47,19 @@ type TrackMatteTypeString =
 
 
 declare type KeyframeWithoutProperty = Omit<Keyframe, 'property'>;
+
+interface PropertyValueDate {
+    propertyValue?: any;
+    propertyExpression?: string;
+}
+interface PropertyMetadata {
+    enabled?: boolean;
+    name?: string;
+}
+interface NestedPropertyGroup {
+    [key: string]: PropertyValueDate | PropertyMetadata | NestedPropertyGroup;
+}
+
+interface PropertyDataStructure {
+    [key: string]: NestedPropertyGroup | PropertyMetadata;
+}

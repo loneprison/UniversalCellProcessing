@@ -4,15 +4,13 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/1 02:07:22
+// - 2024/12/1 03:25:07
 
 (function() {
     var objectProto = Object.prototype;
     var hasOwnProperty = objectProto.hasOwnProperty;
     var nativeToString = objectProto.toString;
     var INFINITY = 1 / 0;
-    var MAX_ARRAY_LENGTH = 4294967295;
-    var MAX_SAFE_INTEGER = 9007199254740991;
     var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
     var reIsPlainProp = /^\w*$/;
     var charCodeOfDot = ".".charCodeAt(0);
@@ -29,9 +27,6 @@
     }
     function isArray(value) {
         return getTag(value) == "[object Array]";
-    }
-    function isObjectLike(value) {
-        return typeof value === "object" && value !== null;
     }
     function or() {
         var index = -1;
@@ -130,42 +125,12 @@
         }
         return array;
     }
-    function forOwn(object, iteratee) {
-        for (var key in object) {
-            if (has(object, key)) {
-                if (iteratee(object[key], key, object) === false) {
-                    break;
-                }
-            }
-        }
-        return object;
-    }
-    function isDate(value) {
-        return isObjectLike(value) && getTag(value) == "[object Date]";
-    }
     function isNil(value) {
         return value == null;
     }
     function isString(value) {
         var type = typeof value;
         return type === "string" || type === "object" && value != null && !isArray(value) && getTag(value) == "[object String]";
-    }
-    function times(n, iteratee) {
-        if (n < 1 || n > MAX_SAFE_INTEGER) {
-            return [];
-        }
-        var index = -1;
-        var length = Math.min(n, MAX_ARRAY_LENGTH);
-        var result = new Array(length);
-        while (++index < length) {
-            result[index] = iteratee(index);
-        }
-        index = MAX_ARRAY_LENGTH;
-        n -= MAX_ARRAY_LENGTH;
-        while (++index < n) {
-            iteratee(index);
-        }
-        return result;
     }
     function createIsNativeType(nativeObject) {
         return function(value) {
@@ -174,18 +139,6 @@
     }
     var IS_KEY_LABEL_EXISTS = parseFloat(app.version) > 22.5;
     var PROPERTY_INTERPOLATION_TYPE = [ 6612, 6613, 6614 ];
-    var jsonEscapes = {
-        "\b": "\\b",
-        "\t": "\\t",
-        "\n": "\\n",
-        "\f": "\\f",
-        "\r": "\\r",
-        "\v": "\\v",
-        '"': '\\"',
-        "\\": "\\\\"
-    };
-    var reEscapedJson = /[\\"\u0000-\u001f\u007f-\u009f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
-    var reHasEscapedJson = new RegExp(reEscapedJson.source);
     var isCompItem = createIsNativeType(CompItem);
     function isLayer(value) {
         return has(value, "containingComp") && isCompItem(value.containingComp) && value.parentProperty === null && value.propertyDepth === 0;
@@ -217,46 +170,8 @@
     function canSetPropertyValue(property) {
         return isProperty(property) && !isNoValueProperty(property) && !isCustomValueProperty(property);
     }
-    function getKeyframeValueByIndex(property, keyIndex, isSpatialValue, isCustomValue) {
-        return {
-            keyTime: property.keyTime(keyIndex),
-            keyValue: isCustomValue ? null : property.keyValue(keyIndex),
-            keySelected: property.keySelected(keyIndex),
-            keyInTemporalEase: property.keyInTemporalEase(keyIndex),
-            keyOutTemporalEase: property.keyOutTemporalEase(keyIndex),
-            keyTemporalContinuous: property.keyTemporalContinuous(keyIndex),
-            keyTemporalAutoBezier: property.keyTemporalAutoBezier(keyIndex),
-            keyInInterpolationType: property.keyInInterpolationType(keyIndex),
-            keyOutInterpolationType: property.keyOutInterpolationType(keyIndex),
-            keyInSpatialTangent: isSpatialValue ? property.keyInSpatialTangent(keyIndex) : null,
-            keyOutSpatialTangent: isSpatialValue ? property.keyOutSpatialTangent(keyIndex) : null,
-            keySpatialAutoBezier: isSpatialValue ? property.keySpatialAutoBezier(keyIndex) : null,
-            keySpatialContinuous: isSpatialValue ? property.keySpatialContinuous(keyIndex) : null,
-            keyRoving: isSpatialValue ? property.keyRoving(keyIndex) : null,
-            keyLabel: IS_KEY_LABEL_EXISTS ? property.keyLabel(keyIndex) : null
-        };
-    }
     function isColorProperty(property) {
         return isProperty(property) && property.propertyValueType === PropertyValueType.COLOR;
-    }
-    function getKeyframeValues(property, predicate) {
-        var isSpatialValue = property.isSpatial && !isColorProperty(property);
-        var isCustomValue = isCustomValueProperty(property);
-        var result = [];
-        times(property.numKeys, function(index) {
-            var keyIndex = index + 1;
-            {
-                result.push(getKeyframeValueByIndex(property, keyIndex, isSpatialValue, isCustomValue));
-            }
-        });
-        return result;
-    }
-    function getActiveItem() {
-        return app.project.activeItem;
-    }
-    function getActiveComp() {
-        var item = getActiveItem();
-        return isCompItem(item) ? item : undefined;
     }
     function createGetAppProperty(path) {
         return function() {
@@ -276,87 +191,6 @@
             nested = isString(name) ? nested.property(name) : baseGetPropertyByIndex(nested, name);
         }
         return index && index === length ? nested : null;
-    }
-    var isAVLayer = createIsNativeType(AVLayer);
-    var isShapeLayer = createIsNativeType(ShapeLayer);
-    var isTextLayer = createIsNativeType(TextLayer);
-    function isRasterLayer(layer) {
-        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
-    }
-    function concatJson(head, partial, gap, mind, tail) {
-        return gap ? head + "\n" + gap + partial.join(",\n" + gap) + "\n" + mind + tail : head + partial.join(",") + tail;
-    }
-    function concatJsonKey(string) {
-        return reHasEscapedJson.test(string) ? '"' + escapeJsonKey(string) + '"' : '"' + string + '"';
-    }
-    function concatSpaceIndent(n) {
-        var indent = "", index = -1;
-        while (++index < n) {
-            indent += " ";
-        }
-        return indent;
-    }
-    function escapeJsonKey(string) {
-        return string.replace(reEscapedJson, function(matched) {
-            var escaped = has(jsonEscapes, matched) ? jsonEscapes[matched] : undefined;
-            return isString(escaped) ? escaped : hexEncode(matched);
-        });
-    }
-    function getPrimitiveValue(value) {
-        return isDate(value) ? value.toString() : value.valueOf();
-    }
-    function hexEncode(string) {
-        return "\\u" + ("0000" + string.charCodeAt(0).toString(16)).slice(-4);
-    }
-    function stringify(value, indent) {
-        if (indent === void 0) {
-            indent = 4;
-        }
-        return stringifyValue(value, isString(indent) ? indent : concatSpaceIndent(indent), "");
-    }
-    function stringifyArray(array, indent, gap) {
-        var mind = gap;
-        gap += indent;
-        var partial = [];
-        forEach(array, function(value, index) {
-            partial[index] = stringifyValue(value, indent, gap);
-        });
-        return partial.length === 0 ? "[]" : concatJson("[", partial, gap, mind, "]");
-    }
-    function stringifyObject(object, indent, gap) {
-        var mind = gap;
-        gap += indent;
-        var colon = gap ? ": " : ":";
-        var partial = [];
-        forOwn(object, function(value, key) {
-            partial.push(concatJsonKey(key) + colon + stringifyValue(value, indent, gap));
-        });
-        return partial.length === 0 ? "{}" : concatJson("{", partial, gap, mind, "}");
-    }
-    function stringifyValue(value, indent, gap) {
-        if (value == null) {
-            return "null";
-        }
-        var primitive = getPrimitiveValue(value);
-        switch (typeof primitive) {
-          case "string":
-            return concatJsonKey(primitive);
-
-          case "number":
-            return isFinite(primitive) ? String(primitive) : "null";
-
-          case "boolean":
-            return String(primitive);
-
-          case "object":
-            return isArray(primitive) ? stringifyArray(primitive, indent, gap) : stringifyObject(primitive, indent, gap);
-
-          case "function":
-            return '"' + escapeJsonKey(primitive.toString()) + '"';
-
-          default:
-            return "null";
-        }
     }
     function mapTemporalEaseValueToClasses(keyTemporalEaseValue) {
         return map(keyTemporalEaseValue, function(keyframeEase) {
@@ -409,59 +243,60 @@
             !isNil(keySelected) && property.setSelectedAtKey(keyIndex, keySelected);
         });
     }
-    function getKeyframeObjects(property) {
-        var KeyframeArray = getKeyframeValues(property);
-        return map(KeyframeArray, function(Keyframe) {
-            return {
-                keyTime: Keyframe.keyTime,
-                keyValue: Keyframe.keyValue,
-                keySelected: Keyframe.keySelected,
-                keyInTemporalEase: Keyframe.keyInTemporalEase,
-                keyOutTemporalEase: Keyframe.keyOutTemporalEase,
-                keyTemporalContinuous: Keyframe.keyTemporalContinuous,
-                keyTemporalAutoBezier: Keyframe.keyTemporalAutoBezier,
-                keyInInterpolationType: Keyframe.keyInInterpolationType,
-                keyOutInterpolationType: Keyframe.keyOutInterpolationType,
-                keyInSpatialTangent: Keyframe.keyInSpatialTangent,
-                keyOutSpatialTangent: Keyframe.keyOutSpatialTangent,
-                keySpatialAutoBezier: Keyframe.keySpatialAutoBezier,
-                keySpatialContinuous: Keyframe.keySpatialContinuous,
-                keyRoving: Keyframe.keyRoving,
-                keyLabel: Keyframe.keyLabel
-            };
-        });
-    }
-    var __assign = function() {
-        __assign = Object.assign || function __assign(t) {
-            for (var s, i = 1, n = arguments.length; i < n; i++) {
-                s = arguments[i];
-                for (var p in s) {
-                    if (Object.prototype.hasOwnProperty.call(s, p)) {
-                        t[p] = s[p];
-                    }
-                }
-            }
-            return t;
-        };
-        return __assign.apply(this, arguments);
-    };
-    function setKeyframeValuesToProperty(property, keyframeArray) {
-        setKeyframeValues(property, map(keyframeArray, function(keyframe) {
-            return __assign({}, keyframe);
-        }));
-    }
-    var activeItem = getActiveComp();
     var firstLayer = getFirstSelectedLayer();
-    var layer1 = activeItem === null || activeItem === void 0 ? void 0 : activeItem.layer(1);
-    if (firstLayer && layer1 && isRasterLayer(firstLayer) && isRasterLayer(layer1)) {
-        var timeRemap = getProperty(firstLayer, [ "timeRemap" ]);
-        var timeRemap2 = getProperty(layer1, [ "timeRemap" ]);
-        if (isProperty(timeRemap) && isProperty(timeRemap2)) {
-            layer1.timeRemapEnabled = true;
-            if (canSetPropertyValue(timeRemap)) {
-                setKeyframeValuesToProperty(timeRemap2, getKeyframeObjects(timeRemap));
-                $.writeln(stringify(getKeyframeObjects(firstLayer.marker)));
-            }
+    var keyDate = [ {
+        "keyTime": 0,
+        "keyValue": [ 1178.5, 663, 0 ],
+        "keySelected": false,
+        "keyInTemporalEase": [ {
+            "influence": 16.666666667,
+            "speed": 0
+        } ],
+        "keyOutTemporalEase": [ {
+            "influence": 16.666666667,
+            "speed": 255.143499755859
+        } ],
+        "keyTemporalContinuous": false,
+        "keyTemporalAutoBezier": false,
+        "keyInInterpolationType": 6612,
+        "keyOutInterpolationType": 6612,
+        "keyInSpatialTangent": [ -35.436595916748, 0, 0 ],
+        "keyOutSpatialTangent": [ 35.436595916748, 0, 0 ],
+        "keySpatialAutoBezier": true,
+        "keySpatialContinuous": true,
+        "keyRoving": false,
+        "keyLabel": 0
+    }, {
+        "keyTime": 0.83333333333333,
+        "keyValue": [ 1391.11958312988, 663, 0 ],
+        "keySelected": false,
+        "keyInTemporalEase": [ {
+            "influence": 16.666666667,
+            "speed": 255.143499755859
+        } ],
+        "keyOutTemporalEase": [ {
+            "influence": 16.666666667,
+            "speed": 0
+        } ],
+        "keyTemporalContinuous": false,
+        "keyTemporalAutoBezier": false,
+        "keyInInterpolationType": 6612,
+        "keyOutInterpolationType": 6612,
+        "keyInSpatialTangent": [ -35.436595916748, 0, 0 ],
+        "keyOutSpatialTangent": [ 35.436595916748, 0, 0 ],
+        "keySpatialAutoBezier": true,
+        "keySpatialContinuous": true,
+        "keyRoving": false,
+        "keyLabel": 0
+    } ];
+    if (firstLayer) {
+        var position = getProperty(firstLayer, [ "ADBE Transform Group", "ADBE Position" ]);
+        if (isProperty(position) && canSetPropertyValue(position) && position.numKeys > 0) {
+            setKeyframeValues(position, keyDate);
+        } else {
+            $.writeln("No keyframes found on the Position property.");
         }
+    } else {
+        $.writeln("No layer selected or invalid selection.");
     }
 }).call(this);
