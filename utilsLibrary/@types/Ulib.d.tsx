@@ -49,8 +49,9 @@ type TrackMatteTypeString =
 declare type KeyframeWithoutProperty = Omit<Keyframe, 'property'>;
 
 interface PropertyValueDate {
-    propertyValue?: any;
-    propertyExpression?: string;
+    value?: any;
+    expression?: string;
+    Keyframe?:Keyframe[]
 }
 interface PropertyMetadata {
     enabled?: boolean;

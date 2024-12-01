@@ -1,4 +1,4 @@
-import { getProperty, isCustomValueProperty, isEmpty, isIndexedGroupType, isMaskPropertyGroup, isNamedGroupType, isNoValueProperty, isProperty, isPropertyGroup, isUndefined, padStart, tree } from "soil-ts";
+import { canSetPropertyValue, getKeyframeValues, getProperty, isCustomValueProperty, isEmpty, isIndexedGroupType, isMaskPropertyGroup, isNamedGroupType, isNoValueProperty, isProperty, isPropertyGroup, isUndefined, padStart, tree } from "soil-ts";
 
 /*
     该模块属于功能缺失的状态
@@ -15,15 +15,18 @@ import { getProperty, isCustomValueProperty, isEmpty, isIndexedGroupType, isMask
 */
 
 class PropertySerializer {
-    public static getPropertyObject(property: Property): AnyObject {
+    public static getPropertyObject(property: CanSetValueProperty): AnyObject {
         const object: AnyObject = {};
         const unreadableType = PropertySerializer.getUnreadableType(property);
-        object.propertyValue = unreadableType
-            ? `!value 属性在值类型为 ${unreadableType} 的 Property 上不可读!`
-            : property.value;
-
+        if (property.numKeys > 0) {
+            object.Keyframe = getKeyframeValues(property)
+        } else {
+            object.value = unreadableType
+                ? `!value 属性在值类型为 ${unreadableType} 的 Property 上不可读!`
+                : property.value;
+        }
         if (property.expressionEnabled) {
-            object.propertyExpression = property.expression;
+            object.expression = property.expression;
         }
 
         return object;
@@ -41,7 +44,7 @@ class PropertyParser {
     private getPropertyGroupMetadata(propertyGroup: PropertyGroup): AnyObject {
         const object: AnyObject = {};
         if (propertyGroup.canSetEnabled) object.enabled = propertyGroup.enabled
-        if (isNamedGroupType(propertyGroup)&&isIndexedGroupType(propertyGroup.propertyGroup(1))) object.name = propertyGroup.name;
+        if (isNamedGroupType(propertyGroup) && isIndexedGroupType(propertyGroup.propertyGroup(1))) object.name = propertyGroup.name;
         return object;
     }
 
@@ -72,7 +75,7 @@ class PropertyParser {
             if (this.isSpecifiedProperty(property, isLayerStyles)) {
                 keyName = `G${keyName}`
                 object[keyName] = this.getPropertyListObject(property, undefined);
-            } else if (isProperty(property) && property.isModified) {
+            } else if (isProperty(property) && canSetPropertyValue(property) && property.isModified) {
                 keyName = `P${keyName}`
                 object[keyName] = PropertySerializer.getPropertyObject(property);
             }

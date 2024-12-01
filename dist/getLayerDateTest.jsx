@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/1 02:09:07
+// - 2024/12/2 02:25:23
 
 (function() {
     var objectProto = Object.prototype;
@@ -12,6 +12,7 @@
     var nativeToString = objectProto.toString;
     var nativeFloor = Math.floor;
     var INFINITY = 1 / 0;
+    var MAX_ARRAY_LENGTH = 4294967295;
     var MAX_SAFE_INTEGER = 9007199254740991;
     var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
     var reIsPlainProp = /^\w*$/;
@@ -273,11 +274,29 @@
         var strLength = stringSize(string);
         return strLength < length ? createPadding(length - strLength, chars) + string : string || "";
     }
+    function times(n, iteratee) {
+        if (n < 1 || n > MAX_SAFE_INTEGER) {
+            return [];
+        }
+        var index = -1;
+        var length = Math.min(n, MAX_ARRAY_LENGTH);
+        var result = new Array(length);
+        while (++index < length) {
+            result[index] = iteratee(index);
+        }
+        index = MAX_ARRAY_LENGTH;
+        n -= MAX_ARRAY_LENGTH;
+        while (++index < n) {
+            iteratee(index);
+        }
+        return result;
+    }
     function createIsNativeType(nativeObject) {
         return function(value) {
             return value != null && value instanceof nativeObject;
         };
     }
+    var IS_KEY_LABEL_EXISTS = parseFloat(app.version) > 22.5;
     var jsonEscapes = {
         "\b": "\\b",
         "\t": "\\t",
@@ -306,6 +325,43 @@
     function isNoValueProperty(property) {
         return isProperty(property) && property.propertyValueType === PropertyValueType.NO_VALUE;
     }
+    function canSetPropertyValue(property) {
+        return isProperty(property) && !isNoValueProperty(property) && !isCustomValueProperty(property);
+    }
+    function getKeyframeValueByIndex(property, keyIndex, isSpatialValue, isCustomValue) {
+        return {
+            keyTime: property.keyTime(keyIndex),
+            keyValue: isCustomValue ? null : property.keyValue(keyIndex),
+            keySelected: property.keySelected(keyIndex),
+            keyInTemporalEase: property.keyInTemporalEase(keyIndex),
+            keyOutTemporalEase: property.keyOutTemporalEase(keyIndex),
+            keyTemporalContinuous: property.keyTemporalContinuous(keyIndex),
+            keyTemporalAutoBezier: property.keyTemporalAutoBezier(keyIndex),
+            keyInInterpolationType: property.keyInInterpolationType(keyIndex),
+            keyOutInterpolationType: property.keyOutInterpolationType(keyIndex),
+            keyInSpatialTangent: isSpatialValue ? property.keyInSpatialTangent(keyIndex) : null,
+            keyOutSpatialTangent: isSpatialValue ? property.keyOutSpatialTangent(keyIndex) : null,
+            keySpatialAutoBezier: isSpatialValue ? property.keySpatialAutoBezier(keyIndex) : null,
+            keySpatialContinuous: isSpatialValue ? property.keySpatialContinuous(keyIndex) : null,
+            keyRoving: isSpatialValue ? property.keyRoving(keyIndex) : null,
+            keyLabel: IS_KEY_LABEL_EXISTS ? property.keyLabel(keyIndex) : null
+        };
+    }
+    function isColorProperty(property) {
+        return isProperty(property) && property.propertyValueType === PropertyValueType.COLOR;
+    }
+    function getKeyframeValues(property, predicate) {
+        var isSpatialValue = property.isSpatial && !isColorProperty(property);
+        var isCustomValue = isCustomValueProperty(property);
+        var result = [];
+        times(property.numKeys, function(index) {
+            var keyIndex = index + 1;
+            {
+                result.push(getKeyframeValueByIndex(property, keyIndex, isSpatialValue, isCustomValue));
+            }
+        });
+        return result;
+    }
     function createGetAppProperty(path) {
         return function() {
             return get(app, path);
@@ -324,12 +380,6 @@
             nested = isString(name) ? nested.property(name) : baseGetPropertyByIndex(nested, name);
         }
         return index && index === length ? nested : null;
-    }
-    var isAVLayer = createIsNativeType(AVLayer);
-    var isShapeLayer = createIsNativeType(ShapeLayer);
-    var isTextLayer = createIsNativeType(TextLayer);
-    function isRasterLayer(layer) {
-        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
     }
     function isIndexedGroupType(property) {
         return isPropertyGroup(property) && property.propertyType == PropertyType.INDEXED_GROUP;
@@ -417,9 +467,13 @@
         PropertySerializer.getPropertyObject = function(property) {
             var object = {};
             var unreadableType = PropertySerializer.getUnreadableType(property);
-            object.propertyValue = unreadableType ? "!value 属性在值类型为 ".concat(unreadableType, " 的 Property 上不可读!") : property.value;
+            if (property.numKeys > 0) {
+                object.Keyframe = getKeyframeValues(property);
+            } else {
+                object.value = unreadableType ? "!value 属性在值类型为 ".concat(unreadableType, " 的 Property 上不可读!") : property.value;
+            }
             if (property.expressionEnabled) {
-                object.propertyExpression = property.expression;
+                object.expression = property.expression;
             }
             return object;
         };
@@ -471,7 +525,7 @@
                 if (this.isSpecifiedProperty(property, isLayerStyles)) {
                     keyName = "G".concat(keyName);
                     object[keyName] = this.getPropertyListObject(property, undefined);
-                } else if (isProperty(property) && property.isModified) {
+                } else if (isProperty(property) && canSetPropertyValue(property) && property.isModified) {
                     keyName = "P".concat(keyName);
                     object[keyName] = PropertySerializer.getPropertyObject(property);
                 }
@@ -485,7 +539,19 @@
         return propertyParser.getPropertyListObject(validPropertyGroup, AdbePath);
     }
     var firstLayer = getFirstSelectedLayer();
-
-        $.writeln(stringify(getPropertyListObject(firstLayer, ['ADBE Transform Group'])));
-
+    if (firstLayer) {
+        var dateObject = {};
+        for (var i = 0; i < firstLayer.numProperties; i++) {
+            var property = getProperty(firstLayer, [ i ]);
+            var matchName = property === null || property === void 0 ? void 0 : property.matchName;
+            if (isPropertyGroup(property)) {
+                dateObject["G".concat(padStart(i.toString(), 4, "0"), " ").concat(matchName)] = getPropertyListObject(property);
+            } else if (isProperty(property) && canSetPropertyValue(property)) {
+                dateObject["P".concat(padStart(i.toString(), 4, "0"), " ").concat(matchName)] = getKeyframeValues(property);
+            }
+        }
+        $.writeln(stringify(dateObject));
+    } else {
+        $.writeln("请选择图层");
+    }
 }).call(this);

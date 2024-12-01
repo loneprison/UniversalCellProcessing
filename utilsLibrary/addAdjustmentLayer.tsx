@@ -28,25 +28,25 @@ function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, l
     let newAdjust: AVLayer | ShapeLayer
     const getLayers: LayerCollection = compItem.layers
     if (useShapeLayer) {
-        const vectorDate = {
+        const vectorDate:PropertyDataStructure = {
             "S0000 selfProperty": {
                 "name": layerName
             },
             "G0001 ADBE Root Vectors Group": {
                 "G0001 ADBE Vector Shape - Rect": {
                     "P0002 ADBE Vector Rect Size": {
-                        "propertyExpression": "[width,height]"
+                        "expression": "[width,height]"
                     }
                 },
                 "G0002 ADBE Vector Graphic - Fill": {
                     "P0004 ADBE Vector Fill Color": {
-                        "propertyValue": [1, 1, 1, 1]
+                        "value": [1, 1, 1, 1]
                     }
                 }
             },
             "G0002 ADBE Transform Group": {
                 "P0002 ADBE Position": {
-                    "propertyExpression": "[thisComp.width,thisComp.height]/2"
+                    "expression": "[thisComp.width,thisComp.height]/2"
                 }
             }
         }

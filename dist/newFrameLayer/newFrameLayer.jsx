@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/30 17:12:29
+// - 2024/12/2 02:13:04
 
 (function() {
     var objectProto = Object.prototype;
@@ -120,22 +120,22 @@
                 "G0002 ADBE Vectors Group": {
                     "G0001 ADBE Vector Shape - Rect": {
                         "P0002 ADBE Vector Rect Size": {
-                            "propertyExpression": "[thisComp.width,thisComp.height]"
+                            "expression": "[thisComp.width,thisComp.height]"
                         }
                     },
                     "G0002 ADBE Vector Shape - Rect": {
                         "P0002 ADBE Vector Rect Size": {
-                            "propertyValue": frameSize
+                            "value": frameSize
                         }
                     },
                     "G0003 ADBE Vector Filter - Merge": {
                         "P0001 ADBE Vector Merge Type": {
-                            "propertyValue": 5
+                            "value": 5
                         }
                     },
                     "G0004 ADBE Vector Graphic - Fill": {
                         "P0004 ADBE Vector Fill Color": {
-                            "propertyValue": [ 0.13725490868092, 0.13725490868092, 0.13725490868092, 1 ]
+                            "value": [ 0.13725490868092, 0.13725490868092, 0.13725490868092, 1 ]
                         }
                     }
                 }
@@ -143,7 +143,7 @@
         },
         "G0002 ADBE Transform Group": {
             "P0001 ADBE Opacity": {
-                "propertyValue": 80
+                "value": 80
             }
         }
     };

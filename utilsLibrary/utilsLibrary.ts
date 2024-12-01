@@ -4,7 +4,6 @@ export { default as canSetTimeRemapEnabled } from './canSetTimeRemapEnabled';
 export { default as copyToClipboard } from './copyToClipboard';
 export { default as duplicateLayers } from './duplicateLayers';
 export { default as getBlendingModeByName } from './getBlendingModeByName';
-export { default as getKeyframeObjects } from './getKeyframeObjects';
 export { default as getLayerSettingsObject } from './getLayerSettingsObject';
 export { default as getPropertyListObject } from './getPropertyListObject';
 export { default as getTrackMatteTypeByName } from './getTrackMatteTypeByName';

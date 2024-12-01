@@ -20,8 +20,7 @@ if (firstLayer && layer1 && _.isRasterLayer(firstLayer) && _.isRasterLayer(layer
 
         layer1.timeRemapEnabled = true
          if (_.canSetPropertyValue(timeRemap)) {
-            ul.setKeyframeValuesToProperty(timeRemap2, ul.getKeyframeObjects(timeRemap))
-            $.writeln(_.stringify(ul.getKeyframeObjects(firstLayer.marker)))
+
          }
     }
 }

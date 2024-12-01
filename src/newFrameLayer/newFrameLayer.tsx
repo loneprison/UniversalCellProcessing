@@ -17,22 +17,22 @@ const framePropertyData: PropertyDataStructure = {
             "G0002 ADBE Vectors Group": {
                 "G0001 ADBE Vector Shape - Rect": {
                     "P0002 ADBE Vector Rect Size": {
-                        "propertyExpression": "[thisComp.width,thisComp.height]"
+                        "expression": "[thisComp.width,thisComp.height]"
                     }
                 },
                 "G0002 ADBE Vector Shape - Rect": {
                     "P0002 ADBE Vector Rect Size": {
-                        "propertyValue": frameSize
+                        "value": frameSize
                     }
                 },
                 "G0003 ADBE Vector Filter - Merge": {
                     "P0001 ADBE Vector Merge Type": {
-                        "propertyValue": 5
+                        "value": 5
                     }
                 },
                 "G0004 ADBE Vector Graphic - Fill": {
                     "P0004 ADBE Vector Fill Color": {
-                        "propertyValue": [
+                        "value": [
                             0.13725490868092,
                             0.13725490868092,
                             0.13725490868092,
@@ -45,7 +45,7 @@ const framePropertyData: PropertyDataStructure = {
     },          
     "G0002 ADBE Transform Group": {
         "P0001 ADBE Opacity": {
-            "propertyValue": 80
+            "value": 80
         }
     }
 }
@@ -69,3 +69,5 @@ function main(): void {
 
 // 使用 setUndoGroup 包裹 main 函数以支持撤销
 _.setUndoGroup("newFrameLayer", main);
+
+_.setPropertiesValues
