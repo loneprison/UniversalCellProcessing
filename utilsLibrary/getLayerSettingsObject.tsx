@@ -1,7 +1,7 @@
 import PropertyParser from "./PropertyParser";
 
-function getLayerSettingsObject(layer: Layer) {
-    const object = {
+function getLayerSettingsObject(layer: Layer):PropertyMetadata {
+    const object:PropertyMetadata = {
         adjustmentLayer: false,         // 设置调整图层
         audioEnabled: true,             // 激活音频
         autoOrient: 4212,               // 图层自动定向
@@ -20,7 +20,6 @@ function getLayerSettingsObject(layer: Layer) {
         matchName: "ADBE AV Layer",     // 匹配名
         motionBlur: false,              // 运动模糊
         name: "浅色 青色 纯色 2",        // 图层命名
-        numProperties: 15,
         outPoint: 20,                   // 图层出点
         preserveTransparency: false,    // 保留透明度设置
         quality: 4614,                  // 图层质量与采样

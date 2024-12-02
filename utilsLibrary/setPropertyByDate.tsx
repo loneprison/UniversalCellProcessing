@@ -8,7 +8,7 @@ function setPropertyValue(property: Property, dateObject: PropertyValueDate) {
 
     // 设置表达式
     if (has(dateObject, 'propertyExpression')) {
-        property.expression = dateObject.propertyExpression
+        property.expression = dateObject.expression
     }
 }
 

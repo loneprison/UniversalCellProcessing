@@ -17,63 +17,116 @@ import * as ul from 'utilsLibrary';
 const firstLayer = _.getFirstSelectedLayer();
 
 if (firstLayer) {
-    const dateObject = getPropertyDate(firstLayer)
+    const dateObject = getRootPropertyDate(firstLayer)
     $.writeln(_.stringify(dateObject))
 } else {
     $.writeln("请选择图层")
 }
 
-
-/**
- * 获取指定属性组的属性数据结构。
- *
- * 遍历 `rootProperty` 中的每个属性，并将属性信息以分层的结构存储为 `PropertyDataStructure`：
- * - `Gxxxx`: 表示 `PropertyGroup` 类型的子项，包含递归的子属性数据。
- * - `Pxxxx`: 表示 `Property` 类型的子项，包含属性的值、关键帧值及表达式。
- *
- * @param {PropertyGroup} rootProperty 要处理的属性组。
- * @returns {PropertyDataStructure} 返回包含所有属性数据的对象。
- * @since 0.1.0
- * @category Utility
- * @example
- *
- * ```ts
- * const firstLayer = _.getFirstSelectedLayer();
- *
- * if (firstLayer) {
- *     const dateObject = getPropertyDate(firstLayer);
- *     $.writeln(_.stringify(dateObject));
- * } else {
- *     $.writeln("请选择图层");
- * }
- * ```
- * // 结果：在控制台中打印选中图层的属性数据结构。
- */
-function getPropertyDate(rootProperty: PropertyGroup): PropertyDataStructure {
+function processProperty(property: _PropertyClasses | PropertyGroup, index?: number): PropertyDataStructure {
     let date: PropertyDataStructure = {};
+    const matchName = property.matchName || "Unnamed";
 
-    for (let i = 0; i < rootProperty.numProperties; i++) {
-        const property = _.getProperty(rootProperty, [i]);
-        const matchName = property?.matchName || "Unnamed";
-
-        if (property && _.isPropertyGroup(property)) {
-            const groupKey = `G${_.padStart(i.toString(), 4, "0")} ${matchName}`;
-            date[groupKey] = getPropertyDate(property);
-        } else if (property && _.canSetPropertyValue(property)) {
-            const key = `P${_.padStart(i.toString(), 4, "0")} ${matchName}`;
-            const propertyValueDate: PropertyValueDate = (date[key] = {});
-
-            if (property.numKeys > 0) {
-                propertyValueDate.Keyframe = _.getKeyframeValues(property);
-            } else {
-                propertyValueDate.value = property.value;
-            }
-
-            if (property.expressionEnabled) {
-                propertyValueDate.expression = property.expression;
-            }
+    if (_.isPropertyGroup(property)) {
+        const selfMetadata = getSelfMetadata(property);
+        // 添加元数据
+        if (!_.isEmpty(selfMetadata)) {
+            date["S0000 selfProperty"] = selfMetadata;
         }
+        // 如果是属性组，递归处理
+        const groupKey = `G${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
+        date[groupKey] = getPropertyGroupDate(property);
+    } else if (_.canSetPropertyValue(property)) {
+        // 如果是可以设置值的属性，处理它
+        const key = `P${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
+        date[key] = getPropertyDate(property);
+    } else if (_.isAVLayer(property)) {
+        const selfMetadata = getSelfMetadataByLayer(property);
+        // 添加元数据
+        if (!_.isEmpty(selfMetadata)) {
+            date["S0000 selfProperty"] = selfMetadata;
+        }
+        // 递归处理
+        const groupKey = `L${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
+        date[groupKey] = getPropertyGroupDate(property);
     }
 
     return date;
+}
+
+function getRootPropertyDate(rootProperty: _PropertyClasses): PropertyDataStructure {
+    return processProperty(rootProperty);
+}
+
+function getPropertyGroupDate(propertyGroup: PropertyGroup): PropertyDataStructure {
+    let date: PropertyDataStructure = {};
+
+    for (let i = 0; i < propertyGroup.numProperties; i++) {
+        const property = _.getProperty(propertyGroup, [i]);
+        if (property) {
+            // 递归处理属性
+            const propertyDate = processProperty(property, i);
+            // 合并属性数据
+            date = { ...date, ...propertyDate };
+        }
+    }
+    return date;
+}
+
+
+function getPropertyDate(property: CanSetValueProperty): PropertyValueDate {
+    let date: PropertyValueDate = {}
+    if (property.numKeys > 0) {
+        date.Keyframe = _.getKeyframeValues(property);
+    } else {
+        date.value = property.value;
+    }
+
+    if (property.expressionEnabled) {
+        date.expression = property.expression;
+    }
+    return date
+}
+
+function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
+    let date: PropertyMetadata = {};
+    if (propertyGroup.canSetEnabled) date.enabled = propertyGroup.enabled
+    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) date.name = propertyGroup.name;
+
+    return date
+}
+
+function getSelfMetadataByLayer(layer: AVLayer): AVLayerMetadata {
+    let date: AVLayerMetadata = getSelfMetadata(layer) as AVLayerMetadata;
+
+    return _.assign(date, {
+        adjustmentLayer: layer.adjustmentLayer,
+        audioEnabled: layer.audioEnabled,
+        autoOrient: layer.autoOrient,
+        blendingMode: layer.blendingMode,
+        effectsActive: layer.effectsActive,
+        environmentLayer: layer.environmentLayer,
+        frameBlendingType: layer.frameBlendingType,
+
+        inPoint: layer.inPoint,
+        outPoint: layer.outPoint,
+        startTime: layer.startTime,
+        stretch: layer.stretch,
+        time: layer.time,
+        timeRemapEnabled: layer.timeRemapEnabled,
+
+        guideLayer: layer.guideLayer,
+        label: layer.label,
+        locked: layer.locked,
+        motionBlur: layer.motionBlur,
+        preserveTransparency: layer.preserveTransparency,
+        quality: layer.quality,
+        samplingQuality: layer.samplingQuality,
+        shy: layer.shy,
+        solo: layer.solo,
+        trackMatteType: layer.trackMatteType,
+
+        height: layer.height,
+        width: layer.width
+    });
 }

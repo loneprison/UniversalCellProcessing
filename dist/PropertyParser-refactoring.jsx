@@ -4,9 +4,23 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/2 14:15:55
+// - 2024/12/3 02:08:07
 
 (function() {
+    var __assign = function() {
+        __assign = Object.assign || function __assign(t) {
+            for (var s, i = 1, n = arguments.length; i < n; i++) {
+                s = arguments[i];
+                for (var p in s) {
+                    if (Object.prototype.hasOwnProperty.call(s, p)) {
+                        t[p] = s[p];
+                    }
+                }
+            }
+            return t;
+        };
+        return __assign.apply(this, arguments);
+    };
     var objectProto = Object.prototype;
     var hasOwnProperty = objectProto.hasOwnProperty;
     var nativeToString = objectProto.toString;
@@ -46,6 +60,24 @@
     function has(object, key) {
         return object != null && hasOwnProperty.call(object, key);
     }
+    function isObject(value) {
+        if (value == null) {
+            return false;
+        }
+        var type = typeof value;
+        return type === "object" || type === "function";
+    }
+    function assign(object, source) {
+        var result = Object(object);
+        if (isObject(source)) {
+            for (var key in source) {
+                if (has(source, key)) {
+                    result[key] = source[key];
+                }
+            }
+        }
+        return result;
+    }
     function getTag(value) {
         if (value == null) {
             return value === undefined ? "[object Undefined]" : "[object Null]";
@@ -57,6 +89,9 @@
     }
     function isObjectLike(value) {
         return typeof value === "object" && value !== null;
+    }
+    function isArguments(value) {
+        return isObjectLike(value) && getTag(value) == "[object Arguments]";
     }
     function or() {
         var index = -1;
@@ -132,6 +167,12 @@
         }
         return result;
     }
+    function isLength(value) {
+        return typeof value === "number" && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+    }
+    function isArrayLike(value) {
+        return value != null && typeof value !== "function" && isLength(value.length);
+    }
     function slice(array, start, end) {
         var length = array == null ? 0 : array.length;
         if (!length) {
@@ -194,6 +235,20 @@
     }
     function isDate(value) {
         return isObjectLike(value) && getTag(value) == "[object Date]";
+    }
+    function isEmpty(value) {
+        if (value == null) {
+            return true;
+        }
+        if (isArrayLike(value) && (isArray(value) || typeof value === "string" || isArguments(value))) {
+            return !value.length;
+        }
+        for (var key in value) {
+            if (has(value, key)) {
+                return false;
+            }
+        }
+        return true;
     }
     function isString(value) {
         var type = typeof value;
@@ -358,6 +413,13 @@
         }
         return index && index === length ? nested : null;
     }
+    var isAVLayer = createIsNativeType(AVLayer);
+    function isIndexedGroupType(property) {
+        return isPropertyGroup(property) && property.propertyType == PropertyType.INDEXED_GROUP;
+    }
+    function isNamedGroupType(property) {
+        return isPropertyGroup(property) && property.propertyType == PropertyType.NAMED_GROUP;
+    }
     function concatJson(head, partial, gap, mind, tail) {
         return gap ? head + "\n" + gap + partial.join(",\n" + gap) + "\n" + mind + tail : head + partial.join(",") + tail;
     }
@@ -435,31 +497,98 @@
     }
     var firstLayer = getFirstSelectedLayer();
     if (firstLayer) {
-        var dateObject = getPropertyDate(firstLayer);
+        var dateObject = getRootPropertyDate(firstLayer);
         $.writeln(stringify(dateObject));
     } else {
         $.writeln("请选择图层");
     }
-    function getPropertyDate(rootProperty) {
+    function processProperty(property, index) {
         var date = {};
-        for (var i = 0; i < rootProperty.numProperties; i++) {
-            var property = getProperty(rootProperty, [ i ]);
-            var matchName = property === null || property === void 0 ? void 0 : property.matchName;
-            if (isPropertyGroup(property)) {
-                date["G".concat(padStart(i.toString(), 4, "0"), " ").concat(matchName)] = getPropertyDate(property);
-            } else if (isProperty(property) && canSetPropertyValue(property)) {
-                var key = "P".concat(padStart(i.toString(), 4, "0"), " ").concat(matchName);
-                var propertyValueDate = date[key] = {};
-                if (property.numKeys > 0) {
-                    propertyValueDate.Keyframe = getKeyframeValues(property);
-                } else {
-                    propertyValueDate.value = property.value;
-                }
-                if (property.expressionEnabled) {
-                    propertyValueDate.expression = property.expression;
-                }
+        var matchName = property.matchName || "Unnamed";
+        if (isPropertyGroup(property)) {
+            var selfMetadata = getSelfMetadata(property);
+            if (!isEmpty(selfMetadata)) {
+                date["S0000 selfProperty"] = selfMetadata;
+            }
+            var groupKey = "G".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
+            date[groupKey] = getPropertyGroupDate(property);
+        } else if (canSetPropertyValue(property)) {
+            var key = "P".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
+            date[key] = getPropertyDate(property);
+        } else if (isAVLayer(property)) {
+            var selfMetadata = getSelfMetadataByLayer(property);
+            if (!isEmpty(selfMetadata)) {
+                date["S0000 selfProperty"] = selfMetadata;
+            }
+            var groupKey = "L".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
+            date[groupKey] = getPropertyGroupDate(property);
+        }
+        return date;
+    }
+    function getRootPropertyDate(rootProperty) {
+        return processProperty(rootProperty);
+    }
+    function getPropertyGroupDate(propertyGroup) {
+        var date = {};
+        for (var i = 0; i < propertyGroup.numProperties; i++) {
+            var property = getProperty(propertyGroup, [ i ]);
+            if (property) {
+                var propertyDate = processProperty(property, i);
+                date = __assign(__assign({}, date), propertyDate);
             }
         }
         return date;
+    }
+    function getPropertyDate(property) {
+        var date = {};
+        if (property.numKeys > 0) {
+            date.Keyframe = getKeyframeValues(property);
+        } else {
+            date.value = property.value;
+        }
+        if (property.expressionEnabled) {
+            date.expression = property.expression;
+        }
+        return date;
+    }
+    function getSelfMetadata(propertyGroup) {
+        var date = {};
+        if (propertyGroup.canSetEnabled) {
+            date.enabled = propertyGroup.enabled;
+        }
+        if (isNamedGroupType(propertyGroup) && isIndexedGroupType(propertyGroup.propertyGroup(1))) {
+            date.name = propertyGroup.name;
+        }
+        return date;
+    }
+    function getSelfMetadataByLayer(layer) {
+        var date = getSelfMetadata(layer);
+        return assign(date, {
+            adjustmentLayer: layer.adjustmentLayer,
+            audioEnabled: layer.audioEnabled,
+            autoOrient: layer.autoOrient,
+            blendingMode: layer.blendingMode,
+            effectsActive: layer.effectsActive,
+            environmentLayer: layer.environmentLayer,
+            frameBlendingType: layer.frameBlendingType,
+            inPoint: layer.inPoint,
+            outPoint: layer.outPoint,
+            startTime: layer.startTime,
+            stretch: layer.stretch,
+            time: layer.time,
+            timeRemapEnabled: layer.timeRemapEnabled,
+            guideLayer: layer.guideLayer,
+            label: layer.label,
+            locked: layer.locked,
+            motionBlur: layer.motionBlur,
+            preserveTransparency: layer.preserveTransparency,
+            quality: layer.quality,
+            samplingQuality: layer.samplingQuality,
+            shy: layer.shy,
+            solo: layer.solo,
+            trackMatteType: layer.trackMatteType,
+            height: layer.height,
+            width: layer.width
+        });
     }
 }).call(this);
