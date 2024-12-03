@@ -137,50 +137,18 @@ interface PropertyMetadata {
     name?: string;
 }
 
-
 /**
- * AVLayer 图层的专属元数据接口，继承自 `PropertyMetadata`。
+ * 基础图层元数据接口，包含图层的基本属性与状态信息。
+ * 
+ * 该接口包含图层的时间控制、标签、锁定、隐藏等元数据。
  *
- * 该接口用于描述 After Effects 中 AVLayer 图层的详细元数据，包含图层的设置、时间与动画控制、属性控制、以及图层尺寸等信息。
- * 适用于对 AVLayer 图层进行操作时，能够全面了解其元数据设置。
- *
- * @interface
- * @extends {PropertyMetadata}
+ * @interface BaseLayerMetadata
  * @since 0.1.0
- * @category Data
- * @example
- *
- * ```ts
- * const avLayerMetadata: AVLayerMetadata = {
- *     enabled: true,
- *     index: 2,
- *     adjustmentLayer: true,
- *     audioEnabled: true,
- *     blendingMode: BlendingMode.MULTIPLY,
- *     inPoint: 0,
- *     outPoint: 10,
- *     label: 10,
- *     locked: false
- * };
- * ```
+ * @category Layer
  */
-interface AVLayerMetadata extends PropertyMetadata {
-    /**
-     * 是否设置为调整图层，调整图层用于影响下面所有图层的效果。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    adjustmentLayer?: boolean;
 
-    /**
-     * 是否激活音频，如果图层有音频内容。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    audioEnabled?: boolean;
-
+interface BaseLayerMetadata extends PropertyMetadata {
+    
     /**
      * 图层的自动定向类型，影响图层是否根据运动方向自动定向。
      * 
@@ -188,38 +156,6 @@ interface AVLayerMetadata extends PropertyMetadata {
      * @default undefined
      */
     autoOrient?: AutoOrientType;
-
-    /**
-     * 图层的混合模式，决定图层与下方图层的混合方式。
-     * 
-     * @type {BlendingMode}
-     * @default undefined
-     */
-    blendingMode?: BlendingMode;
-
-    /**
-     * 图层的效果是否处于激活状态。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    effectsActive?: boolean;
-
-    /**
-     * 是否为环境图层，用于特定的合成和效果。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    environmentLayer?: boolean;
-
-    /**
-     * 图层的帧混合类型，控制如何处理帧率和运动。
-     * 
-     * @type {FrameBlendingType}
-     * @default undefined
-     */
-    frameBlendingType?: FrameBlendingType;
 
     /**
      * 图层的入点，表示图层开始显示的时间（秒）。
@@ -262,22 +198,6 @@ interface AVLayerMetadata extends PropertyMetadata {
     time?: number;
 
     /**
-     * 是否启用时间重新映射，用于控制图层时间的变化。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    timeRemapEnabled?: boolean;
-
-    /**
-     * 是否为参考图层，用于设置图层的辅助标志。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    guideLayer?: boolean;
-
-    /**
      * 图层的标签编号，用于在面板中区分不同图层的颜色标签。
      * 
      * @type {number}
@@ -292,6 +212,106 @@ interface AVLayerMetadata extends PropertyMetadata {
      * @default undefined
      */
     locked?: boolean;
+
+    /**
+     * 图层是否隐藏，用于在合成中隐藏不需要显示的图层。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    shy?: boolean;
+
+    /**
+     * 图层是否为独显图层，仅显示该图层而隐藏其他图层。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    solo?: boolean;
+
+    /**
+     * 图层的唯一 ID，用于区分不同的图层。
+     * 
+     * @type {number}
+     * @default undefined
+     */
+    id?: number;
+}
+
+/**
+ * RasterLayer（光栅图层）专属元数据接口，继承自 BaseLayerMetadata。
+ * 
+ * 该接口包含与光栅图层特有的属性和功能相关的元数据，例如调整图层、音频激活、混合模式等。
+ *
+ * @interface RasterLayerMetadata
+ * @extends BaseLayerMetadata
+ * @since 0.1.0
+ * @category Layer
+ */
+interface RasterLayerMetadata extends BaseLayerMetadata {
+    /**
+     * 是否设置为调整图层，调整图层用于影响下面所有图层的效果。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    adjustmentLayer?: boolean;
+
+    /**
+     * 是否激活音频，如果图层有音频内容。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    audioEnabled?: boolean;
+
+    /**
+     * 图层的混合模式，决定图层与下方图层的混合方式。
+     * 
+     * @type {BlendingMode}
+     * @default undefined
+     */
+    blendingMode?: BlendingMode;
+
+    /**
+     * 图层的效果是否处于激活状态。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    effectsActive?: boolean;
+
+    /**
+     * 是否为环境图层，用于特定的合成和效果。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    environmentLayer?: boolean;
+
+    /**
+     * 图层的帧混合类型，控制如何处理帧率和运动。
+     * 
+     * @type {FrameBlendingType}
+     * @default undefined
+     */
+    frameBlendingType?: FrameBlendingType;
+
+    /**
+     * 是否启用时间重新映射，用于控制图层时间的变化。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    timeRemapEnabled?: boolean;
+
+    /**
+     * 是否为参考图层，用于设置图层的辅助标志。
+     * 
+     * @type {boolean}
+     * @default undefined
+     */
+    guideLayer?: boolean;
 
     /**
      * 是否启用运动模糊，用于图层运动时产生模糊效果。
@@ -326,22 +346,6 @@ interface AVLayerMetadata extends PropertyMetadata {
     samplingQuality?: LayerSamplingQuality;
 
     /**
-     * 图层是否隐藏，用于在合成中隐藏不需要显示的图层。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    shy?: boolean;
-
-    /**
-     * 图层是否为独显图层，仅显示该图层而隐藏其他图层。
-     * 
-     * @type {boolean}
-     * @default undefined
-     */
-    solo?: boolean;
-
-    /**
      * 图层的轨迹遮罩类型，用于设置图层的遮罩行为。
      * 
      * @type {number}
@@ -364,15 +368,8 @@ interface AVLayerMetadata extends PropertyMetadata {
      * @default undefined
      */
     width?: number;
-
-    /**
-     * 图层的唯一 ID，用于区分不同的图层。
-     * 
-     * @type {number}
-     * @default undefined
-     */
-    id?: number;
 }
+
 
 
 /**
