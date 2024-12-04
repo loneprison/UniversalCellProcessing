@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/3 13:59:54
+// - 2024/12/4 13:50:27
 
 (function() {
     var __assign = function() {
@@ -396,17 +396,24 @@
         return index && index === length ? nested : null;
     }
     var isAVLayer = createIsNativeType(AVLayer);
+    var isShapeLayer = createIsNativeType(ShapeLayer);
+    var isTextLayer = createIsNativeType(TextLayer);
+    function isRasterLayer(layer) {
+        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
+    }
     function createIsAVLayer(callback) {
         return function(value) {
             return isAVLayer(value) && callback(value);
         };
     }
+    var isCameraLayer = createIsNativeType(CameraLayer);
     var isCompLayer = createIsAVLayer(function(layer) {
         return isCompItem(layer.source);
     });
     function isIndexedGroupType(property) {
         return isPropertyGroup(property) && property.propertyType == PropertyType.INDEXED_GROUP;
     }
+    var isLightLayer = createIsNativeType(LightLayer);
     function isNamedGroupType(property) {
         return isPropertyGroup(property) && property.propertyType == PropertyType.NAMED_GROUP;
     }
@@ -486,82 +493,96 @@
         }
     }
     var firstLayer = getFirstSelectedLayer();
-    if (firstLayer) {
-        var dateObject = getRootPropertyDate(firstLayer);
-        $.writeln(stringify(dateObject));
+    var selfKey = "S0000 selfProperty";
+    if (isRasterLayer(firstLayer)) {
+        var dataObject = getRootPropertyData(firstLayer);
+        $.writeln(stringify(dataObject));
     } else {
         $.writeln("请选择图层");
     }
-    var selfKey = "S0000 selfProperty";
-    function getRootPropertyDate(rootProperty) {
+    function getRootPropertyData(rootProperty) {
+        var data = {};
         if (isProperty(rootProperty) || isPropertyGroup(rootProperty)) {
-            processProperty(rootProperty);
+            data = processProperty(rootProperty);
         } else if (isLayer(rootProperty)) {
-            getLayerDate(rootProperty);
+            data = getLayerData(rootProperty);
         }
-        return processProperty(rootProperty);
+        return data;
     }
     function processProperty(property, index) {
-        var date = {};
-        var matchName = property.matchName || "Unnamed";
+        var data = {};
+        var matchName = property === null || property === void 0 ? void 0 : property.matchName;
         if (isPropertyGroup(property)) {
             var selfMetadata = getSelfMetadata(property);
             if (!isEmpty(selfMetadata)) {
-                date[selfKey] = selfMetadata;
+                data[selfKey] = selfMetadata;
             }
             var groupKey = "G".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
-            date[groupKey] = getPropertyGroupDate(property);
+            data[groupKey] = getPropertyGroupData(property);
         } else if (canSetPropertyValue(property)) {
             var key = "P".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
-            date[key] = getPropertyDate(property);
+            data[key] = getPropertyData(property);
         }
-        return date;
+        return data;
     }
-    function getPropertyGroupDate(propertyGroup) {
-        var date = {};
+    function getPropertyGroupData(propertyGroup) {
+        var data = {};
         for (var i = 0; i < propertyGroup.numProperties; i++) {
             var property = getProperty(propertyGroup, [ i ]);
             if (property) {
-                var propertyDate = processProperty(property, i);
-                date = __assign(__assign({}, date), propertyDate);
+                var propertyData = processProperty(property, i);
+                data = __assign(__assign({}, data), propertyData);
             }
         }
-        return date;
+        return data;
     }
-    function getLayerDate(layer) {
-        var date = {};
+    function getLayerData(layer) {
+        var data = {};
         if (isAVLayer(layer)) {
             if (isCompLayer(layer)) {} else {
-                date[selfKey] = getSelfMetadataByRasterLayer(layer);
+                data[selfKey] = getSelfMetadataByRasterLayer(layer);
             }
+        } else if (isTextLayer(layer)) {
+            data[selfKey] = getSelfMetadataByRasterLayer(layer);
+        } else if (isShapeLayer(layer)) {
+            data[selfKey] = getSelfMetadataByRasterLayer(layer);
+        } else if (isCameraLayer(layer)) {
+            data[selfKey] = getSelfMetadataByBaseLayer(layer);
+        } else if (isLightLayer(layer)) {
+            data[selfKey] = getSelfMetadataByBaseLayer(layer);
         }
-        return date;
+        for (var i = 0; i < layer.numProperties; i++) {
+            var property = getProperty(layer, [ i ]);
+            var propertyData = processProperty(property, i);
+            data = __assign(__assign({}, data), propertyData);
+        }
+        return data;
     }
-    function getPropertyDate(property) {
-        var date = {};
+    function getPropertyData(property) {
+        var data = {};
         if (property.numKeys > 0) {
-            date.Keyframe = getKeyframeValues(property);
+            data.Keyframe = getKeyframeValues(property);
         } else {
-            date.value = property.value;
+            data.value = property.value;
         }
         if (property.expressionEnabled) {
-            date.expression = property.expression;
+            data.expression = property.expression;
         }
-        return date;
+        return data;
     }
     function getSelfMetadata(propertyGroup) {
-        var date = {};
+        var data = {};
         if (propertyGroup.canSetEnabled) {
-            date.enabled = propertyGroup.enabled;
+            data.enabled = propertyGroup.enabled;
         }
         if (isNamedGroupType(propertyGroup) && isIndexedGroupType(propertyGroup.propertyGroup(1))) {
-            date.name = propertyGroup.name;
+            data.name = propertyGroup.name;
         }
-        return date;
+        return data;
     }
     function getSelfMetadataByBaseLayer(layer) {
-        var date = getSelfMetadata(layer);
-        return __assign(__assign({}, date), {
+        var data = getSelfMetadata(layer);
+        return __assign(__assign({}, data), {
             autoOrient: layer.autoOrient,
             inPoint: layer.inPoint,
             outPoint: layer.outPoint,
@@ -575,8 +596,8 @@
         });
     }
     function getSelfMetadataByRasterLayer(layer) {
-        var date = getSelfMetadataByBaseLayer(layer);
-        return __assign(__assign({}, date), {
+        var data = getSelfMetadataByBaseLayer(layer);
+        return __assign(__assign({}, data), {
             adjustmentLayer: layer.adjustmentLayer,
             audioEnabled: layer.audioEnabled,
             blendingMode: layer.blendingMode,

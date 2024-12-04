@@ -1,6 +1,6 @@
 import { addProperty, getProperty, isPropertyGroup, setPropertyValue } from "soil-ts";
 import setPropertiesExpressions from "./setPropertiesExpressions";
-import { setPropertyByDate } from "utilsLibrary";
+import { setPropertyByData } from "utilsLibrary";
 
 /**
  * 添加一个调整图层，支持形状图层或固态图层。
@@ -28,7 +28,7 @@ function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, l
     let newAdjust: AVLayer | ShapeLayer
     const getLayers: LayerCollection = compItem.layers
     if (useShapeLayer) {
-        const vectorDate:PropertyDataStructure = {
+        const vectorData:PropertyDataStructure = {
             "S0000 selfProperty": {
                 "name": layerName
             },
@@ -52,7 +52,7 @@ function addAdjustmentLayer(compItem: CompItem, useShapeLayer: Boolean = true, l
         }
 
         newAdjust = getLayers.addShape()
-        setPropertyByDate(newAdjust, vectorDate)
+        setPropertyByData(newAdjust, vectorData)
     } else {
         newAdjust = getLayers.addSolid(layerColor, layerName, compItem.width, compItem.height, 1, compItem.duration);
     }

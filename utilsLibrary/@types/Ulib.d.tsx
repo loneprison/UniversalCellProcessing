@@ -54,13 +54,13 @@ type TrackMatteTypeString =
  * - `expression`：与属性关联的表达式。
  * - `Keyframe`：该属性的关键帧数据，存储在 `Keyframe[]` 数组中。
  * 
- * @interface PropertyValueDate
+ * @interface PropertyValueData
  * @since 0.1.0
  * @category Utility
  * 
  * @example
  * ```ts
- * const propertyValueDate: PropertyValueDate = {
+ * const propertyValueData: PropertyValueData = {
  *     value: 100,
  *     expression: "time * 10",
  *     Keyframe: [
@@ -71,7 +71,7 @@ type TrackMatteTypeString =
  * };
  * ```
  */
-interface PropertyValueDate {
+interface PropertyValueData {
     /** 属性的当前值，可以是任何类型的值 */
     value?: any;
 
@@ -399,5 +399,5 @@ interface RasterLayerMetadata extends BaseLayerMetadata {
  * ```
  */
 interface PropertyDataStructure {
-    [key: string]: PropertyValueDate | PropertyDataStructure | PropertyMetadata;
+    [key: string]: PropertyValueData | PropertyDataStructure | PropertyMetadata;
 }

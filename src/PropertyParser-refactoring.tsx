@@ -15,119 +15,122 @@ import * as ul from 'utilsLibrary';
 */
 
 const firstLayer = _.getFirstSelectedLayer();
+const selfKey = "S0000 selfProperty"
 
 if (_.isRasterLayer(firstLayer)) {
-    firstLayer.setTrackMatte(firstLayer,ul.getTrackMatteTypeByName('Alpha 反转遮罩'))
-    const dateObject = getRootPropertyDate(firstLayer)
-    $.writeln(_.stringify(dateObject))
+    const dataObject = getRootPropertyData(firstLayer)
+    $.writeln(_.stringify(dataObject))
 } else {
     $.writeln("请选择图层")
 }
 
 
-const selfKey = "S0000 selfProperty"
 
-function getRootPropertyDate(rootProperty: _PropertyClasses): PropertyDataStructure {
-    let date: PropertyDataStructure = {};
+
+function getRootPropertyData(rootProperty: _PropertyClasses): PropertyDataStructure {
+    let data: PropertyDataStructure = {};
     if (_.isProperty(rootProperty) || _.isPropertyGroup(rootProperty)) {
-        date = processProperty(rootProperty);
+        data = processProperty(rootProperty);
     } else if (_.isLayer(rootProperty)) {
-        date = getLayerDate(rootProperty);
+        data = getLayerData(rootProperty);
     }
-    return processProperty(rootProperty);
+    return data
 }
 
 function processProperty(property: _PropertyClasses | PropertyGroup, index?: number): PropertyDataStructure {
-    let date: PropertyDataStructure = {};
-    const matchName = property.matchName || "Unnamed";
+    let data: PropertyDataStructure = {};
+    const matchName = property?.matchName
 
     if (_.isPropertyGroup(property)) {
         const selfMetadata = getSelfMetadata(property);
         // 添加元数据
         if (!_.isEmpty(selfMetadata)) {
-            date[selfKey] = selfMetadata;
+            data[selfKey] = selfMetadata;
         }
         // 如果是属性组，递归处理
         const groupKey = `G${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
-        date[groupKey] = getPropertyGroupDate(property);
+        data[groupKey] = getPropertyGroupData(property);
     } else if (_.canSetPropertyValue(property)) {
         // 如果是可以设置值的属性，处理它
         const key = `P${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
-        date[key] = getPropertyDate(property);
+        data[key] = getPropertyData(property);
     }
 
-    return date;
+    return data;
 }
 
-function getPropertyGroupDate(propertyGroup: PropertyGroup): PropertyDataStructure {
-    let date: PropertyDataStructure = {};
+function getPropertyGroupData(propertyGroup: PropertyGroup): PropertyDataStructure {
+    let data: PropertyDataStructure = {};
 
     for (let i = 0; i < propertyGroup.numProperties; i++) {
         const property = _.getProperty(propertyGroup, [i]);
         if (property) {
             // 递归处理属性
-            const propertyDate = processProperty(property, i);
+            const propertyData = processProperty(property, i);
             // 合并属性数据
-            date = { ...date, ...propertyDate };
+            data = { ...data, ...propertyData };
         }
     }
-    return date;
+    return data;
 }
 
-function getLayerDate(layer: Layer): PropertyDataStructure {
-    let date: PropertyDataStructure = {};
+function getLayerData(layer: Layer): PropertyDataStructure {
+    let data: PropertyDataStructure = {};
 
     if (_.isAVLayer(layer)) {
         if (_.isCompLayer(layer)) {
-
         } else {
-            date[selfKey] = getSelfMetadataByRasterLayer(layer)
+            data[selfKey] = getSelfMetadataByRasterLayer(layer)
         }
     } else if (_.isTextLayer(layer)) {
-        date[selfKey] = getSelfMetadataByRasterLayer(layer)
+        data[selfKey] = getSelfMetadataByRasterLayer(layer)
 
     } else if (_.isShapeLayer(layer)) {
-        date[selfKey] = getSelfMetadataByRasterLayer(layer)
+        data[selfKey] = getSelfMetadataByRasterLayer(layer)
 
     } else if (_.isCameraLayer(layer)) {
-        date[selfKey] = getSelfMetadataByBaseLayer(layer)
+        data[selfKey] = getSelfMetadataByBaseLayer(layer)
 
     }else if(_.isLightLayer(layer)){
-        date[selfKey] = getSelfMetadataByBaseLayer(layer)
-        
+        data[selfKey] = getSelfMetadataByBaseLayer(layer)
+    }
+    for(let i = 0;i<layer.numProperties;i++){
+        const property = _.getProperty(layer, [i]);
+        const propertyData = processProperty(property, i);
+        data = { ...data, ...propertyData };
     }
 
-    return date;
+    return data;
 }
 
 
-function getPropertyDate(property: CanSetValueProperty): PropertyValueDate {
-    let date: PropertyValueDate = {}
+function getPropertyData(property: CanSetValueProperty): PropertyValueData {
+    let data: PropertyValueData = {}
     if (property.numKeys > 0) {
-        date.Keyframe = _.getKeyframeValues(property);
+        data.Keyframe = _.getKeyframeValues(property);
     } else {
-        date.value = property.value;
+        data.value = property.value;
     }
 
     if (property.expressionEnabled) {
-        date.expression = property.expression;
+        data.expression = property.expression;
     }
-    return date
+    return data
 }
 
 function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
-    let date: PropertyMetadata = {};
-    if (propertyGroup.canSetEnabled) date.enabled = propertyGroup.enabled;
-    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) date.name = propertyGroup.name;
+    let data: PropertyMetadata = {};
+    if (propertyGroup.canSetEnabled) data.enabled = propertyGroup.enabled;
+    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
 
-    return date;
+    return data;
 }
 
 function getSelfMetadataByBaseLayer(layer: Layer): BaseLayerMetadata {
-    let date: BaseLayerMetadata = getSelfMetadata(layer);
+    let data: BaseLayerMetadata = getSelfMetadata(layer);
 
     return { 
-        ...date,
+        ...data,
         autoOrient: layer.autoOrient,
         inPoint: layer.inPoint,
         outPoint: layer.outPoint,
@@ -142,10 +145,10 @@ function getSelfMetadataByBaseLayer(layer: Layer): BaseLayerMetadata {
 }
 
 function getSelfMetadataByRasterLayer(layer: RasterLayer): RasterLayerMetadata {
-    let date: RasterLayerMetadata = getSelfMetadataByBaseLayer(layer);
+    let data: RasterLayerMetadata = getSelfMetadataByBaseLayer(layer);
 
     return {
-        ...date,
+        ...data,
         adjustmentLayer: layer.adjustmentLayer,
         audioEnabled: layer.audioEnabled,
         blendingMode: layer.blendingMode,

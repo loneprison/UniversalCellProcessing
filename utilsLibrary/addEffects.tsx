@@ -3,10 +3,10 @@ import setPropertiesExpressions from "./setPropertiesExpressions";
 
 //该function只能配合指定格式的Obj使用
 function addEffects(layer: Layer, effectObj: AnyObject):void {
-    const effcts = layer.property("ADBE Effect Parade")
+    const effects = layer.property("ADBE Effect Parade")
 
     forOwn(effectObj, ({name, values, expressions, matchName }, key) => {
-        const newEffect = addPropertyAlone(effcts, [matchName]);
+        const newEffect = addPropertyAlone(effects, [matchName]);
 
         if (isPropertyGroup(newEffect)) {
             if(name){

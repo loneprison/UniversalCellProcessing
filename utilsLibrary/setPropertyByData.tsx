@@ -1,26 +1,26 @@
 import { addPropertyAlone, forOwn, has, isProperty, startsWith } from "soil-ts"
 
-function setPropertyValue(property: Property, dateObject: PropertyValueDate) {
+function setPropertyValue(property: Property, dataObject: PropertyValueData) {
     // 设置 property 的值
-    if (has(dateObject, 'propertyValue')) {
-        property.setValue(dateObject.propertyValue)
+    if (has(dataObject, 'propertyValue')) {
+        property.setValue(dataObject.propertyValue)
     }
 
     // 设置表达式
-    if (has(dateObject, 'propertyExpression')) {
-        property.expression = dateObject.expression
+    if (has(dataObject, 'propertyExpression')) {
+        property.expression = dataObject.expression
     }
 }
 
-function setSelfProperty(property: _PropertyClasses, dateObject: PropertyMetadata) {
+function setSelfProperty(property: _PropertyClasses, dataObject: PropertyMetadata) {
     // 设置显示
-    if (has(dateObject, 'enabled')) {
-        property.enabled = dateObject.enabled
+    if (has(dataObject, 'enabled')) {
+        property.enabled = dataObject.enabled
     }
 
     // 设置 property 的名字
-    if (has(dateObject, 'name')) {
-        property.name = dateObject.name
+    if (has(dataObject, 'name')) {
+        property.name = dataObject.name
     }
 }
 
@@ -45,14 +45,14 @@ function setSelfProperty(property: _PropertyClasses, dateObject: PropertyMetadat
  * const selectedLayers = _.getSelectedLayers();
  * if (selectedLayers.length == 2) {
  *     const propertyData = ul.getPropertyListObject(selectedLayers[0],["ADBE Effect Parade"]);
- *     ul.setPropertyByDate(_.getProperty(selectedLayers[1],["ADBE Effect Parade"]), propertyData);
+ *     ul.setPropertyByData(_.getProperty(selectedLayers[1],["ADBE Effect Parade"]), propertyData);
  * }
  * // 结果：将第一个选中图层的属性数据设置到第二个图层。
  * ```
  */
 
 // 递归遍历每一层
-function setPropertyByDate(rootProperty: _PropertyClasses, propertyData: PropertyDataStructure | NestedPropertyGroup) {
+function setPropertyByData(rootProperty: _PropertyClasses, propertyData: PropertyDataStructure ) {
 
     forOwn(propertyData, (value, key) => {
 
@@ -64,10 +64,10 @@ function setPropertyByDate(rootProperty: _PropertyClasses, propertyData: Propert
 
         // 如果当前是一个 Group（包含子项）
         if (startsWith(key, "G", 0)) {
-            setPropertyByDate(subProperty, value as NestedPropertyGroup)
+            setPropertyByData(subProperty, value as PropertyDataStructure)
         } else if (startsWith(key, "P", 0)) {
             if (isProperty(subProperty)) {
-                setPropertyValue(subProperty, (value as PropertyValueDate))
+                setPropertyValue(subProperty, (value as PropertyValueData))
             }else{
                 alert(`在${key}键上遇到了错误\n该属性不为Property`)
             }
@@ -78,4 +78,4 @@ function setPropertyByDate(rootProperty: _PropertyClasses, propertyData: Propert
     })
 }
 
-export default setPropertyByDate
+export default setPropertyByData
