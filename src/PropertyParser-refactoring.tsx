@@ -17,13 +17,13 @@ import * as ul from 'utilsLibrary';
 const firstLayer = _.getFirstSelectedLayer();
 const selfKey = "S0000 selfProperty"
 
-if (_.isRasterLayer(firstLayer)) {
+if (_.isLayer(firstLayer)) {
     const dataObject = getRootPropertyData(firstLayer)
     $.writeln(_.stringify(dataObject))
+    _.logJson(dataObject)
 } else {
     $.writeln("请选择图层")
 }
-
 
 
 
@@ -42,11 +42,6 @@ function processProperty(property: _PropertyClasses | PropertyGroup, index?: num
     const matchName = property?.matchName
 
     if (_.isPropertyGroup(property)) {
-        const selfMetadata = getSelfMetadata(property);
-        // 添加元数据
-        if (!_.isEmpty(selfMetadata)) {
-            data[selfKey] = selfMetadata;
-        }
         // 如果是属性组，递归处理
         const groupKey = `G${_.padStart(index?.toString() || "1", 4, "0")} ${matchName}`;
         data[groupKey] = getPropertyGroupData(property);
@@ -62,7 +57,12 @@ function processProperty(property: _PropertyClasses | PropertyGroup, index?: num
 function getPropertyGroupData(propertyGroup: PropertyGroup): PropertyDataStructure {
     let data: PropertyDataStructure = {};
 
-    for (let i = 0; i < propertyGroup.numProperties; i++) {
+    const selfMetadata = getSelfMetadata(propertyGroup);
+    // 添加元数据
+    if (!_.isEmpty(selfMetadata)) {
+        data[selfKey] = selfMetadata;
+    }
+    for (let i = 1; i <= propertyGroup.numProperties; i++) {
         const property = _.getProperty(propertyGroup, [i]);
         if (property) {
             // 递归处理属性
@@ -84,7 +84,7 @@ function getLayerData(layer: Layer): PropertyDataStructure {
         }
     } else if (_.isTextLayer(layer)) {
         data[selfKey] = getSelfMetadataByRasterLayer(layer)
-
+        return {...data,...{"Error:在TextLayer上读取属性遇到了问题": {}}}
     } else if (_.isShapeLayer(layer)) {
         data[selfKey] = getSelfMetadataByRasterLayer(layer)
 
@@ -94,7 +94,7 @@ function getLayerData(layer: Layer): PropertyDataStructure {
     }else if(_.isLightLayer(layer)){
         data[selfKey] = getSelfMetadataByBaseLayer(layer)
     }
-    for(let i = 0;i<layer.numProperties;i++){
+    for(let i = 1;i<=layer.numProperties;i++){
         const property = _.getProperty(layer, [i]);
         const propertyData = processProperty(property, i);
         data = { ...data, ...propertyData };
@@ -106,6 +106,9 @@ function getLayerData(layer: Layer): PropertyDataStructure {
 
 function getPropertyData(property: CanSetValueProperty): PropertyValueData {
     let data: PropertyValueData = {}
+
+    data.name = property.name
+
     if (property.numKeys > 0) {
         data.Keyframe = _.getKeyframeValues(property);
     } else {
@@ -121,7 +124,8 @@ function getPropertyData(property: CanSetValueProperty): PropertyValueData {
 function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
     let data: PropertyMetadata = {};
     if (propertyGroup.canSetEnabled) data.enabled = propertyGroup.enabled;
-    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
+    // if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
+    data.name = propertyGroup.name;
 
     return data;
 }

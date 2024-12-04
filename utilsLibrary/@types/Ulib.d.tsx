@@ -80,6 +80,9 @@ interface PropertyValueData {
 
     /** 属性的关键帧数据，请使用Soil的getKeyframeValues获取关键帧代码 */
     Keyframe?: Keyframe[];
+
+    /** 属性的名字，一般在调试以外的场合不作获取 */
+    name?:string;
 }
 
 

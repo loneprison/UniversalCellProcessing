@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/4 13:50:27
+// - 2024/12/5 02:36:28
 
 (function() {
     var __assign = function() {
@@ -21,8 +21,10 @@
         };
         return __assign.apply(this, arguments);
     };
+    var arrayProto = Array.prototype;
     var objectProto = Object.prototype;
     var hasOwnProperty = objectProto.hasOwnProperty;
+    var nativeJoin = arrayProto.join;
     var nativeToString = objectProto.toString;
     var nativeFloor = Math.floor;
     var INFINITY = 1 / 0;
@@ -310,6 +312,7 @@
             return value != null && value instanceof nativeObject;
         };
     }
+    var pathDesktop = Folder.desktop;
     var IS_KEY_LABEL_EXISTS = parseFloat(app.version) > 22.5;
     var jsonEscapes = {
         "\b": "\\b",
@@ -341,6 +344,19 @@
     }
     function canSetPropertyValue(property) {
         return isProperty(property) && !isNoValueProperty(property) && !isCustomValueProperty(property);
+    }
+    var isFile = createIsNativeType(File);
+    function newFile(path) {
+        return new File(path);
+    }
+    function castFile(file) {
+        return isFile(file) ? file : newFile(file);
+    }
+    function createPath() {
+        return nativeJoin.call(arguments, Folder.fs === "Windows" ? "\\" : "/");
+    }
+    function newFolder(path) {
+        return new Folder(path);
     }
     function getKeyframeValueByIndex(property, keyIndex, isSpatialValue, isCustomValue) {
         return {
@@ -398,9 +414,6 @@
     var isAVLayer = createIsNativeType(AVLayer);
     var isShapeLayer = createIsNativeType(ShapeLayer);
     var isTextLayer = createIsNativeType(TextLayer);
-    function isRasterLayer(layer) {
-        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
-    }
     function createIsAVLayer(callback) {
         return function(value) {
             return isAVLayer(value) && callback(value);
@@ -410,12 +423,21 @@
     var isCompLayer = createIsAVLayer(function(layer) {
         return isCompItem(layer.source);
     });
-    function isIndexedGroupType(property) {
-        return isPropertyGroup(property) && property.propertyType == PropertyType.INDEXED_GROUP;
-    }
     var isLightLayer = createIsNativeType(LightLayer);
-    function isNamedGroupType(property) {
-        return isPropertyGroup(property) && property.propertyType == PropertyType.NAMED_GROUP;
+    function writeFile(path, content, encoding, mode) {
+        if (encoding === void 0) {
+            encoding = "utf-8";
+        }
+        if (mode === void 0) {
+            mode = "w";
+        }
+        var file = castFile(path);
+        file.encoding = encoding;
+        var fileFolder = newFolder(file.path);
+        if (!fileFolder.exists) {
+            fileFolder.create();
+        }
+        return file.open(mode) && file.write(content) && file.close();
     }
     function concatJson(head, partial, gap, mind, tail) {
         return gap ? head + "\n" + gap + partial.join(",\n" + gap) + "\n" + mind + tail : head + partial.join(",") + tail;
@@ -492,11 +514,21 @@
             return "null";
         }
     }
+    function writeJson(path, object, indent) {
+        if (indent === void 0) {
+            indent = 4;
+        }
+        return writeFile(path, stringify(object, indent));
+    }
+    function logJson(object) {
+        writeJson(createPath(pathDesktop.toString(), "soil_log.json"), object);
+    }
     var firstLayer = getFirstSelectedLayer();
     var selfKey = "S0000 selfProperty";
-    if (isRasterLayer(firstLayer)) {
+    if (isLayer(firstLayer)) {
         var dataObject = getRootPropertyData(firstLayer);
         $.writeln(stringify(dataObject));
+        logJson(dataObject);
     } else {
         $.writeln("请选择图层");
     }
@@ -513,10 +545,6 @@
         var data = {};
         var matchName = property === null || property === void 0 ? void 0 : property.matchName;
         if (isPropertyGroup(property)) {
-            var selfMetadata = getSelfMetadata(property);
-            if (!isEmpty(selfMetadata)) {
-                data[selfKey] = selfMetadata;
-            }
             var groupKey = "G".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
             data[groupKey] = getPropertyGroupData(property);
         } else if (canSetPropertyValue(property)) {
@@ -527,7 +555,11 @@
     }
     function getPropertyGroupData(propertyGroup) {
         var data = {};
-        for (var i = 0; i < propertyGroup.numProperties; i++) {
+        var selfMetadata = getSelfMetadata(propertyGroup);
+        if (!isEmpty(selfMetadata)) {
+            data[selfKey] = selfMetadata;
+        }
+        for (var i = 1; i <= propertyGroup.numProperties; i++) {
             var property = getProperty(propertyGroup, [ i ]);
             if (property) {
                 var propertyData = processProperty(property, i);
@@ -544,6 +576,9 @@
             }
         } else if (isTextLayer(layer)) {
             data[selfKey] = getSelfMetadataByRasterLayer(layer);
+            return __assign(__assign({}, data), {
+                "Error:在TextLayer上读取属性遇到了问题": {}
+            });
         } else if (isShapeLayer(layer)) {
             data[selfKey] = getSelfMetadataByRasterLayer(layer);
         } else if (isCameraLayer(layer)) {
@@ -551,7 +586,7 @@
         } else if (isLightLayer(layer)) {
             data[selfKey] = getSelfMetadataByBaseLayer(layer);
         }
-        for (var i = 0; i < layer.numProperties; i++) {
+        for (var i = 1; i <= layer.numProperties; i++) {
             var property = getProperty(layer, [ i ]);
             var propertyData = processProperty(property, i);
             data = __assign(__assign({}, data), propertyData);
@@ -560,6 +595,7 @@
     }
     function getPropertyData(property) {
         var data = {};
+        data.name = property.name;
         if (property.numKeys > 0) {
             data.Keyframe = getKeyframeValues(property);
         } else {
@@ -575,9 +611,7 @@
         if (propertyGroup.canSetEnabled) {
             data.enabled = propertyGroup.enabled;
         }
-        if (isNamedGroupType(propertyGroup) && isIndexedGroupType(propertyGroup.propertyGroup(1))) {
-            data.name = propertyGroup.name;
-        }
+        data.name = propertyGroup.name;
         return data;
     }
     function getSelfMetadataByBaseLayer(layer) {
