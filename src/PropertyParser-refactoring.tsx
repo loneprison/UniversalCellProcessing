@@ -77,32 +77,96 @@ function getPropertyGroupData(propertyGroup: PropertyGroup): PropertyDataStructu
 function getLayerData(layer: Layer): PropertyDataStructure {
     let data: PropertyDataStructure = {};
 
-    if (_.isAVLayer(layer)) {
-        if (_.isCompLayer(layer)) {
-        } else {
-            data[selfKey] = getSelfMetadataByRasterLayer(layer)
-        }
-    } else if (_.isTextLayer(layer)) {
-        data[selfKey] = getSelfMetadataByRasterLayer(layer)
-        return {...data,...{"Error:在TextLayer上读取属性遇到了问题": {}}}
-    } else if (_.isShapeLayer(layer)) {
-        data[selfKey] = getSelfMetadataByRasterLayer(layer)
+    //  除了文本层的的源文本会读取错误以及图层样式是永远被读取的两个问题
+    //  用这个方法读取事实上是没有问题的
+    //  但是为了保证不读取无用数据这里使用人工排除/筛选根属性的方法
+    //  for(let i = 1;i<=layer.numProperties;i++){
+    //      const property = _.getProperty(layer, [i]);
+    //      const propertyData = processProperty(property, i);
+    //      data = { ...data, ...propertyData };
+    //   }
 
-    } else if (_.isCameraLayer(layer)) {
-        data[selfKey] = getSelfMetadataByBaseLayer(layer)
-
-    }else if(_.isLightLayer(layer)){
-        data[selfKey] = getSelfMetadataByBaseLayer(layer)
+    // Marker不做判断会对空标记做value的读取
+    const marker = layer.marker
+    if (marker.numKeys > 0) {
+        data = { ...data, ...manualGetRootPropertyData(marker) }
     }
-    for(let i = 1;i<=layer.numProperties;i++){
-        const property = _.getProperty(layer, [i]);
-        const propertyData = processProperty(property, i);
-        data = { ...data, ...propertyData };
+
+    // 所有类型图层上都存在transform属性数据
+    data = { ...data, ...manualGetRootPropertyData(layer.transform) }
+
+    if (_.isRasterLayer(layer)) {
+        data[selfKey] = getSelfMetadataByRasterLayer(layer)
+
+        data = { 
+            ...data, 
+            ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Mask Parade"])) ,
+            ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Effect Parade"])),
+        }
+
+        if(layer.layerStyle.canSetEnabled==true){
+            //明天再写
+        }
+
+        if(layer.threeDLayer){
+            //少判断了，明天检查
+            data = { 
+                ...data, 
+                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Extrsn Options Group"])) ,
+                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Material Options Group"])),
+            }
+        }
+
+        if(layer.hasAudio){
+            data = { 
+                ...data, 
+                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Audio Group"])) ,
+            }
+        }
+
+        if (_.isAVLayer(layer)) {
+            if(layer.canSetTimeRemapEnabled&&layer.timeRemapEnabled){
+                data = { 
+                    ...data, 
+                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Time Remapping"])) ,
+                    //这个肯定有问题
+                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Plane Options Group"])),
+                }
+            }
+
+            if (_.isCompLayer(layer)) {
+                data = { 
+                    ...data, 
+                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Layer Overrides"])) ,
+                }
+            }
+        } else if (_.isTextLayer(layer)) {
+            data = { ...data, ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Text Properties"])) }
+        } else if (_.isShapeLayer(layer)) {
+            data = { ...data, ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Root Vectors Group"])) }
+        }
+    } else {
+        data[selfKey] = getSelfMetadataByBaseLayer(layer)
+        if (_.isCameraLayer(layer)) {
+            data = { ...data, ...manualGetRootPropertyData(layer.cameraOption) }
+        } else if (_.isLightLayer(layer)) {
+            data = { ...data, ...manualGetRootPropertyData(layer.lightOption) }
+        }
     }
 
     return data;
 }
 
+function manualGetRootPropertyData(rootProperty: CanSetValueProperty | PropertyGroup): PropertyDataStructure {
+    let data: PropertyDataStructure = {};
+
+    const { prefix, nested } = _.isProperty(rootProperty)
+        ? { prefix: 'P', nested: getPropertyData(rootProperty) }
+        : { prefix: 'G', nested: getPropertyGroupData(rootProperty) };
+
+    data[`${prefix}${_.padStart(rootProperty.propertyIndex.toString(), 4)} ${rootProperty.matchName}`] = nested
+    return data
+}
 
 function getPropertyData(property: CanSetValueProperty): PropertyValueData {
     let data: PropertyValueData = {}
@@ -124,8 +188,7 @@ function getPropertyData(property: CanSetValueProperty): PropertyValueData {
 function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
     let data: PropertyMetadata = {};
     if (propertyGroup.canSetEnabled) data.enabled = propertyGroup.enabled;
-    // if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
-    data.name = propertyGroup.name;
+    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
 
     return data;
 }
@@ -133,7 +196,7 @@ function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
 function getSelfMetadataByBaseLayer(layer: Layer): BaseLayerMetadata {
     let data: BaseLayerMetadata = getSelfMetadata(layer);
 
-    return { 
+    return {
         ...data,
         autoOrient: layer.autoOrient,
         inPoint: layer.inPoint,
