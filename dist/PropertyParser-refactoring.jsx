@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/5 02:36:28
+// - 2024/12/6 18:12:07
 
 (function() {
     var __assign = function() {
@@ -414,6 +414,9 @@
     var isAVLayer = createIsNativeType(AVLayer);
     var isShapeLayer = createIsNativeType(ShapeLayer);
     var isTextLayer = createIsNativeType(TextLayer);
+    function isRasterLayer(layer) {
+        return isAVLayer(layer) || isShapeLayer(layer) || isTextLayer(layer);
+    }
     function createIsAVLayer(callback) {
         return function(value) {
             return isAVLayer(value) && callback(value);
@@ -423,7 +426,13 @@
     var isCompLayer = createIsAVLayer(function(layer) {
         return isCompItem(layer.source);
     });
+    function isIndexedGroupType(property) {
+        return isPropertyGroup(property) && property.propertyType == PropertyType.INDEXED_GROUP;
+    }
     var isLightLayer = createIsNativeType(LightLayer);
+    function isNamedGroupType(property) {
+        return isPropertyGroup(property) && property.propertyType == PropertyType.NAMED_GROUP;
+    }
     function writeFile(path, content, encoding, mode) {
         if (encoding === void 0) {
             encoding = "utf-8";
@@ -569,28 +578,69 @@
         return data;
     }
     function getLayerData(layer) {
+        var _a;
         var data = {};
-        if (isAVLayer(layer)) {
-            if (isCompLayer(layer)) {} else {
-                data[selfKey] = getSelfMetadataByRasterLayer(layer);
+        var marker = layer.marker;
+        if (marker.numKeys > 0) {
+            data = __assign(__assign({}, data), manualGetRootPropertyData(marker));
+        }
+        data = __assign(__assign({}, data), manualGetRootPropertyData(layer.transform));
+        if (isRasterLayer(layer)) {
+            data[selfKey] = getSelfMetadataByRasterLayer(layer);
+            data = __assign(__assign({}, data), manualGetRootPropertyData(layer.effect));
+            var layerStyle = layer.layerStyle;
+            if (layerStyle.canSetEnabled == true) {
+                var layerStyleDate = __assign({
+                    "S0000 selfProperty": {
+                        enabled: layerStyle.enabled
+                    }
+                }, manualGetRootPropertyData(layerStyle.blendingOption));
+                for (var i = 2; i <= layerStyle.numProperties; i++) {
+                    if (layerStyle.property(i).canSetEnabled == true) {
+                        layerStyleDate = __assign(__assign({}, layerStyleDate), manualGetRootPropertyData(layerStyle.property(i)));
+                    }
+                }
+                data = __assign(__assign({}, data), (_a = {}, _a["G".concat(padStart(layerStyle.propertyIndex.toString(), 4, "0"), " ").concat(layerStyle.matchName)] = layerStyleDate, 
+                _a));
             }
-        } else if (isTextLayer(layer)) {
-            data[selfKey] = getSelfMetadataByRasterLayer(layer);
-            return __assign(__assign({}, data), {
-                "Error:在TextLayer上读取属性遇到了问题": {}
-            });
-        } else if (isShapeLayer(layer)) {
-            data[selfKey] = getSelfMetadataByRasterLayer(layer);
-        } else if (isCameraLayer(layer)) {
+            if (layer.threeDLayer) {
+                data = __assign(__assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Extrsn Options Group" ]))), manualGetRootPropertyData(layer.materialOption));
+            }
+            if (layer.hasAudio) {
+                data = __assign(__assign({}, data), manualGetRootPropertyData(layer.audio));
+            }
+            if (isAVLayer(layer)) {
+                if (layer.canSetTimeRemapEnabled && layer.timeRemapEnabled) {
+                    data = __assign(__assign(__assign({}, data), manualGetRootPropertyData(layer.timeRemap)), manualGetRootPropertyData(getProperty(layer, [ "ADBE Plane Options Group" ])));
+                }
+                if (isCompLayer(layer)) {
+                    data = __assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Layer Overrides" ])));
+                }
+            } else if (isTextLayer(layer)) {
+                data = __assign(__assign({}, data), manualGetRootPropertyData(layer.text));
+            } else if (isShapeLayer(layer)) {
+                data = __assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Root Vectors Group" ])));
+            }
+        } else {
             data[selfKey] = getSelfMetadataByBaseLayer(layer);
-        } else if (isLightLayer(layer)) {
-            data[selfKey] = getSelfMetadataByBaseLayer(layer);
+            if (isCameraLayer(layer)) {
+                data = __assign(__assign({}, data), manualGetRootPropertyData(layer.cameraOption));
+            } else if (isLightLayer(layer)) {
+                data = __assign(__assign({}, data), manualGetRootPropertyData(layer.lightOption));
+            }
         }
-        for (var i = 1; i <= layer.numProperties; i++) {
-            var property = getProperty(layer, [ i ]);
-            var propertyData = processProperty(property, i);
-            data = __assign(__assign({}, data), propertyData);
-        }
+        return data;
+    }
+    function manualGetRootPropertyData(rootProperty) {
+        var data = {};
+        var _a = isProperty(rootProperty) ? {
+            prefix: "P",
+            nested: getPropertyData(rootProperty)
+        } : {
+            prefix: "G",
+            nested: getPropertyGroupData(rootProperty)
+        }, prefix = _a.prefix, nested = _a.nested;
+        data["".concat(prefix).concat(padStart(rootProperty.propertyIndex.toString(), 4, "0"), " ").concat(rootProperty.matchName)] = nested;
         return data;
     }
     function getPropertyData(property) {
@@ -611,7 +661,9 @@
         if (propertyGroup.canSetEnabled) {
             data.enabled = propertyGroup.enabled;
         }
-        data.name = propertyGroup.name;
+        if (isNamedGroupType(propertyGroup) && isIndexedGroupType(propertyGroup.propertyGroup(1))) {
+            data.name = propertyGroup.name;
+        }
         return data;
     }
     function getSelfMetadataByBaseLayer(layer) {

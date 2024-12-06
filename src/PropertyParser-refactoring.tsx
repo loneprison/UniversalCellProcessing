@@ -98,50 +98,67 @@ function getLayerData(layer: Layer): PropertyDataStructure {
     if (_.isRasterLayer(layer)) {
         data[selfKey] = getSelfMetadataByRasterLayer(layer)
 
-        data = { 
-            ...data, 
-            ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Mask Parade"])) ,
-            ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Effect Parade"])),
+        data = {
+            ...data,
+            ...manualGetRootPropertyData(layer.effect),
         }
 
-        if(layer.layerStyle.canSetEnabled==true){
-            //明天再写
+        const layerStyle = layer.layerStyle
+        if (layerStyle.canSetEnabled == true) {
+            let layerStyleDate = {
+                ...{
+                "S0000 selfProperty": {
+                    enabled: layerStyle.enabled
+                }
+            },
+            ...manualGetRootPropertyData(layerStyle.blendingOption)
+            }
+            for (let i = 2; i <= layerStyle.numProperties; i++) {
+                if(layerStyle.property(i).canSetEnabled==true){
+                    layerStyleDate = {
+                        ...layerStyleDate,
+                        ...manualGetRootPropertyData(layerStyle.property(i) as PropertyGroup)
+                    }
+                }
+            }
+
+            data = {...data,...{[`G${_.padStart(layerStyle.propertyIndex.toString(), 4,"0")} ${layerStyle.matchName}`]:layerStyleDate}}
         }
 
-        if(layer.threeDLayer){
+        if (layer.threeDLayer) {
             //少判断了，明天检查
-            data = { 
-                ...data, 
-                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Extrsn Options Group"])) ,
-                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Material Options Group"])),
+            data = {
+                ...data,
+                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Extrsn Options Group"])),
+                ...manualGetRootPropertyData(layer.materialOption),
             }
         }
 
-        if(layer.hasAudio){
-            data = { 
-                ...data, 
-                ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Audio Group"])) ,
+        if (layer.hasAudio) {
+            data = {
+                ...data,
+                ...manualGetRootPropertyData(layer.audio),
             }
         }
 
         if (_.isAVLayer(layer)) {
-            if(layer.canSetTimeRemapEnabled&&layer.timeRemapEnabled){
-                data = { 
-                    ...data, 
-                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Time Remapping"])) ,
+            if (layer.canSetTimeRemapEnabled && layer.timeRemapEnabled) {
+                data = {
+                    ...data,
+                    ...manualGetRootPropertyData(layer.timeRemap),
                     //这个肯定有问题
                     ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Plane Options Group"])),
                 }
             }
 
             if (_.isCompLayer(layer)) {
-                data = { 
-                    ...data, 
-                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Layer Overrides"])) ,
+                data = {
+                    ...data,
+                    ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Layer Overrides"])),
                 }
             }
         } else if (_.isTextLayer(layer)) {
-            data = { ...data, ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Text Properties"])) }
+            data = { ...data, ...manualGetRootPropertyData((layer as TextLayer).text) }
         } else if (_.isShapeLayer(layer)) {
             data = { ...data, ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Root Vectors Group"])) }
         }
@@ -164,7 +181,7 @@ function manualGetRootPropertyData(rootProperty: CanSetValueProperty | PropertyG
         ? { prefix: 'P', nested: getPropertyData(rootProperty) }
         : { prefix: 'G', nested: getPropertyGroupData(rootProperty) };
 
-    data[`${prefix}${_.padStart(rootProperty.propertyIndex.toString(), 4)} ${rootProperty.matchName}`] = nested
+    data[`${prefix}${_.padStart(rootProperty.propertyIndex.toString(), 4,"0")} ${rootProperty.matchName}`] = nested
     return data
 }
 
