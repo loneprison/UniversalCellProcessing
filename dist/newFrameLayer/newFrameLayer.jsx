@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/2 02:29:06
+// - 2024/12/9 13:18:30
 
 (function() {
     var objectProto = Object.prototype;
@@ -70,23 +70,23 @@
         func();
         app.endUndoGroup();
     }
-    function setPropertyValue(property, dateObject) {
-        if (has(dateObject, "propertyValue")) {
-            property.setValue(dateObject.propertyValue);
+    function setPropertyValue(property, dataObject) {
+        if (has(dataObject, "value")) {
+            property.setValue(dataObject.value);
         }
-        if (has(dateObject, "propertyExpression")) {
-            property.expression = dateObject.propertyExpression;
-        }
-    }
-    function setSelfProperty(property, dateObject) {
-        if (has(dateObject, "enabled")) {
-            property.enabled = dateObject.enabled;
-        }
-        if (has(dateObject, "name")) {
-            property.name = dateObject.name;
+        if (has(dataObject, "expression")) {
+            property.expression = dataObject.expression;
         }
     }
-    function setPropertyByDate(rootProperty, propertyData) {
+    function setSelfProperty(property, dataObject) {
+        if (has(dataObject, "enabled")) {
+            property.enabled = dataObject.enabled;
+        }
+        if (has(dataObject, "name")) {
+            property.name = dataObject.name;
+        }
+    }
+    function setPropertyByData(rootProperty, propertyData) {
         forOwn(propertyData, function(value, key) {
             if (startsWith(key, "S", 0)) {
                 setSelfProperty(rootProperty, value);
@@ -94,7 +94,7 @@
             }
             var subProperty = addPropertyAlone(rootProperty, [ key.substring(6) ]);
             if (startsWith(key, "G", 0)) {
-                setPropertyByDate(subProperty, value);
+                setPropertyByData(subProperty, value);
             } else if (startsWith(key, "P", 0)) {
                 if (isProperty(subProperty)) {
                     setPropertyValue(subProperty, value);
@@ -112,6 +112,9 @@
     }
     var frameSize = [ 1920, 1080 ];
     var framePropertyData = {
+        "S0000 selfProperty": {
+            name: "frame"
+        },
         "G0001 ADBE Root Vectors Group": {
             "G0001 ADBE Vector Group": {
                 "S0000 selfProperty": {
@@ -149,8 +152,7 @@
     };
     function createFrameLayer(nowItem) {
         var shapeLayer = nowItem.layers.addShape();
-        shapeLayer.name = "frame";
-        setPropertyByDate(shapeLayer, framePropertyData);
+        setPropertyByData(shapeLayer, framePropertyData);
         shapeLayer.guideLayer = true;
     }
     function main() {

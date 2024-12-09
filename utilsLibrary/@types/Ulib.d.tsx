@@ -31,9 +31,9 @@ type BlendingModeString =
     | "饱和度"
     | "颜色"
     | "发光度"
-    | "模板 Apha"
+    | "模板 Alpha"
     | "模板亮度"
-    | "轮廓 Apha"
+    | "轮廓 Alpha"
     | "轮廓亮度"
     | "Alpha 添加"
     | "冷光预乘";
@@ -355,6 +355,10 @@ interface RasterLayerMetadata extends BaseLayerMetadata {
      * @default undefined
      */
     trackMatteType?: number;
+
+    threeDLayer?:boolean;
+
+    threeDPerChar?:boolean;
 
     /**
      * 图层的高度，适用于合成或图层本身的尺寸。

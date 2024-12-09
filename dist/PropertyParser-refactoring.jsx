@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/6 18:12:07
+// - 2024/12/9 19:35:42
 
 (function() {
     var __assign = function() {
@@ -52,6 +52,7 @@
     var rsSurrPair = "[\\ud800-\\udbff][\\udc00-\\udfff]";
     var rsZWJ = "\\u200d";
     var reHasUnicode = RegExp("[".concat(rsZWJ + rsAstralRange + rsComboRange + rsVarRange, "]"));
+    var reIsUint = /^(?:0|[1-9]\d*)$/;
     var reOptMod = "".concat(rsModifier, "?");
     var rsOptVar = "[".concat(rsVarRange, "]?");
     var rsOptJoin = "(?:".concat(rsZWJ, "(?:").concat([ rsNonAstral, rsRegional, rsSurrPair ].join("|"), ")").concat(rsOptVar + reOptMod, ")*");
@@ -151,11 +152,48 @@
         }
         return result;
     }
+    function isIndex(value, length) {
+        var type = typeof value;
+        length = length == null ? MAX_SAFE_INTEGER : length;
+        return !!length && or(type === "number", reIsUint.test(value)) && value > -1 && value % 1 == 0 && value < length;
+    }
+    function arrayLikeKeys(value, inherited) {
+        var isArr = isArray(value);
+        var isArg = !isArr && isArguments(value);
+        var skipIndexes = isArr || isArg;
+        var length = value.length;
+        var result = new Array(skipIndexes ? length : 0);
+        var index = skipIndexes ? -1 : length;
+        while (++index < length) {
+            result[index] = "".concat(index);
+        }
+        for (var key in value) {
+            if (has(value, key) && !(skipIndexes && (key === "length" || isIndex(key, length)))) {
+                result.push(key);
+            }
+        }
+        return result;
+    }
     function isLength(value) {
         return typeof value === "number" && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
     }
     function isArrayLike(value) {
         return value != null && typeof value !== "function" && isLength(value.length);
+    }
+    function keys(object) {
+        if (object == null) {
+            return [];
+        }
+        if (isArrayLike(object)) {
+            return arrayLikeKeys(object);
+        }
+        var result = [];
+        for (var key in object) {
+            if (has(object, key)) {
+                result.push(key);
+            }
+        }
+        return result;
     }
     function slice(array, start, end) {
         var length = array == null ? 0 : array.length;
@@ -537,7 +575,7 @@
     if (isLayer(firstLayer)) {
         var dataObject = getRootPropertyData(firstLayer);
         $.writeln(stringify(dataObject));
-        logJson(dataObject);
+        logJson(getLayerDataOld(firstLayer));
     } else {
         $.writeln("请选择图层");
     }
@@ -556,24 +594,18 @@
         if (isPropertyGroup(property)) {
             var groupKey = "G".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
             data[groupKey] = getPropertyGroupData(property);
-        } else if (canSetPropertyValue(property)) {
+        } else if (canSetPropertyValue(property) && property.isModified) {
             var key = "P".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
             data[key] = getPropertyData(property);
         }
         return data;
     }
-    function getPropertyGroupData(propertyGroup) {
+    function getLayerDataOld(layer) {
         var data = {};
-        var selfMetadata = getSelfMetadata(propertyGroup);
-        if (!isEmpty(selfMetadata)) {
-            data[selfKey] = selfMetadata;
-        }
-        for (var i = 1; i <= propertyGroup.numProperties; i++) {
-            var property = getProperty(propertyGroup, [ i ]);
-            if (property) {
-                var propertyData = processProperty(property, i);
-                data = __assign(__assign({}, data), propertyData);
-            }
+        for (var i = 1; i <= layer.numProperties; i++) {
+            var property = getProperty(layer, [ i ]);
+            var propertyData = processProperty(property, i);
+            data = __assign(__assign({}, data), propertyData);
         }
         return data;
     }
@@ -584,7 +616,22 @@
         if (marker.numKeys > 0) {
             data = __assign(__assign({}, data), manualGetRootPropertyData(marker));
         }
-        data = __assign(__assign({}, data), manualGetRootPropertyData(layer.transform));
+        var transformData = manualGetRootPropertyData(layer.transform);
+        var transformKey = keys(transformData)[0];
+        var excludeTransformKey;
+        if (transformData.dimensionsSeparated) {
+            excludeTransformKey = /^ADBE Position$/;
+        } else {
+            excludeTransformKey = /ADBE Position_\d+/;
+        }
+        forOwn(transformData[transformKey], function(value, key) {
+            if (excludeTransformKey.test(key)) {
+                delete transformData[transformKey][key];
+            }
+        });
+        if (!isEmpty(transformData)) {
+            data = __assign(__assign({}, data), transformData);
+        }
         if (isRasterLayer(layer)) {
             data[selfKey] = getSelfMetadataByRasterLayer(layer);
             data = __assign(__assign({}, data), manualGetRootPropertyData(layer.effect));
@@ -597,25 +644,23 @@
                 }, manualGetRootPropertyData(layerStyle.blendingOption));
                 for (var i = 2; i <= layerStyle.numProperties; i++) {
                     if (layerStyle.property(i).canSetEnabled == true) {
-                        layerStyleDate = __assign(__assign({}, layerStyleDate), manualGetRootPropertyData(layerStyle.property(i)));
+                        layerStyleDate = __assign(__assign({}, layerStyleDate), manualGetRootPropertyData(layerStyle.property(i), true));
                     }
                 }
                 data = __assign(__assign({}, data), (_a = {}, _a["G".concat(padStart(layerStyle.propertyIndex.toString(), 4, "0"), " ").concat(layerStyle.matchName)] = layerStyleDate, 
                 _a));
             }
             if (layer.threeDLayer) {
-                data = __assign(__assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Extrsn Options Group" ]))), manualGetRootPropertyData(layer.materialOption));
+                data = __assign(__assign(__assign({}, data), manualGetRootPropertyData(layer.geometryOption)), manualGetRootPropertyData(layer.materialOption));
             }
             if (layer.hasAudio) {
                 data = __assign(__assign({}, data), manualGetRootPropertyData(layer.audio));
             }
             if (isAVLayer(layer)) {
                 if (layer.canSetTimeRemapEnabled && layer.timeRemapEnabled) {
-                    data = __assign(__assign(__assign({}, data), manualGetRootPropertyData(layer.timeRemap)), manualGetRootPropertyData(getProperty(layer, [ "ADBE Plane Options Group" ])));
+                    data = __assign(__assign({}, data), manualGetRootPropertyData(layer.timeRemap));
                 }
-                if (isCompLayer(layer)) {
-                    data = __assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Layer Overrides" ])));
-                }
+                if (isCompLayer(layer)) {}
             } else if (isTextLayer(layer)) {
                 data = __assign(__assign({}, data), manualGetRootPropertyData(layer.text));
             } else if (isShapeLayer(layer)) {
@@ -631,8 +676,14 @@
         }
         return data;
     }
-    function manualGetRootPropertyData(rootProperty) {
+    function manualGetRootPropertyData(rootProperty, isModified) {
+        if (isModified === void 0) {
+            isModified = rootProperty.isModified;
+        }
         var data = {};
+        if (!isModified) {
+            return data;
+        }
         var _a = isProperty(rootProperty) ? {
             prefix: "P",
             nested: getPropertyData(rootProperty)
@@ -653,6 +704,19 @@
         }
         if (property.expressionEnabled) {
             data.expression = property.expression;
+        }
+        return data;
+    }
+    function getPropertyGroupData(propertyGroup) {
+        var data = {};
+        var selfMetadata = getSelfMetadata(propertyGroup);
+        if (!isEmpty(selfMetadata)) {
+            data[selfKey] = selfMetadata;
+        }
+        for (var i = 1; i <= propertyGroup.numProperties; i++) {
+            var property = getProperty(propertyGroup, [ i ]);
+            var propertyData = processProperty(property, i);
+            data = __assign(__assign({}, data), propertyData);
         }
         return data;
     }
@@ -683,6 +747,11 @@
     }
     function getSelfMetadataByRasterLayer(layer) {
         var data = getSelfMetadataByBaseLayer(layer);
+        if (isTextLayer(layer)) {
+            data = __assign(__assign({}, data), {
+                threeDPerChar: layer.threeDPerChar
+            });
+        }
         return __assign(__assign({}, data), {
             adjustmentLayer: layer.adjustmentLayer,
             audioEnabled: layer.audioEnabled,
@@ -691,6 +760,7 @@
             environmentLayer: layer.environmentLayer,
             frameBlendingType: layer.frameBlendingType,
             timeRemapEnabled: layer.timeRemapEnabled,
+            threeDLayer: layer.threeDLayer,
             guideLayer: layer.guideLayer,
             motionBlur: layer.motionBlur,
             preserveTransparency: layer.preserveTransparency,

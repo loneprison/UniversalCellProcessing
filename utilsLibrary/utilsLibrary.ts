@@ -9,7 +9,6 @@ export { default as getPropertyListObject } from './getPropertyListObject';
 export { default as getTrackMatteTypeByName } from './getTrackMatteTypeByName';
 export { default as PropertyParser } from './PropertyParser';
 export { default as removeTargetValues } from './removeTargetValues';
-export { default as setKeyframeValuesToProperty } from './setKeyframeValuesToProperty';
 export { default as setPropertiesExpressions } from './setPropertiesExpressions';
 export { default as setPropertyByData } from './setPropertyByData';
 export { default as sortLayersByIndex } from './sortLayersByIndex';

@@ -2,12 +2,12 @@ import { addPropertyAlone, forOwn, has, isProperty, startsWith } from "soil-ts"
 
 function setPropertyValue(property: Property, dataObject: PropertyValueData) {
     // 设置 property 的值
-    if (has(dataObject, 'propertyValue')) {
-        property.setValue(dataObject.propertyValue)
+    if (has(dataObject, 'value')) {
+        property.setValue(dataObject.value)
     }
 
     // 设置表达式
-    if (has(dataObject, 'propertyExpression')) {
+    if (has(dataObject, 'expression')) {
         property.expression = dataObject.expression
     }
 }

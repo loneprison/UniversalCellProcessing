@@ -9,6 +9,9 @@ function showError(message: string): void {
 const frameSize = [1920, 1080]
 
 const framePropertyData: PropertyDataStructure = {
+    "S0000 selfProperty":{
+        name:"frame"
+    },
     'G0001 ADBE Root Vectors Group': {
         "G0001 ADBE Vector Group": {
             "S0000 selfProperty": {
@@ -53,8 +56,7 @@ const framePropertyData: PropertyDataStructure = {
 function createFrameLayer(nowItem: CompItem): void {
     // 创建一个新的形状图层
     const shapeLayer = nowItem.layers.addShape();
-    shapeLayer.name = 'frame';
-    ul.setPropertyByDate(shapeLayer, framePropertyData)
+    ul.setPropertyByData(shapeLayer, framePropertyData)
     shapeLayer.guideLayer = true
 }
 

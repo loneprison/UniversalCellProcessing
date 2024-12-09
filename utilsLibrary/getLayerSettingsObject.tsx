@@ -1,7 +1,7 @@
 import PropertyParser from "./PropertyParser";
 
-function getLayerSettingsObject(layer: Layer):PropertyMetadata {
-    const object:PropertyMetadata = {
+function getLayerSettingsObject(layer: Layer):RasterLayerMetadata {
+    const object:RasterLayerMetadata = {
         adjustmentLayer: false,         // 设置调整图层
         audioEnabled: true,             // 激活音频
         autoOrient: 4212,               // 图层自动定向
