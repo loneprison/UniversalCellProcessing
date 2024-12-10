@@ -2,7 +2,6 @@
     "scripts": {
         "build": "rollup -c",
         "watch": "node scripts/watch.js",
-        "getIndex": "node scripts/getIndex.js",
         "clean": "node scripts/clean.js"
     },
     "devDependencies": {

@@ -1,5 +1,5 @@
 import * as _ from 'soil-ts';
-import * as ul from 'utilsLibrary';
+import { setPropertyByData } from '../Library/Library';
 
 
 function showError(message: string): void {
@@ -56,7 +56,7 @@ const framePropertyData: PropertyDataStructure = {
 function createFrameLayer(nowItem: CompItem): void {
     // 创建一个新的形状图层
     const shapeLayer = nowItem.layers.addShape();
-    ul.setPropertyByData(shapeLayer, framePropertyData)
+    setPropertyByData(shapeLayer, framePropertyData)
     shapeLayer.guideLayer = true
 }
 

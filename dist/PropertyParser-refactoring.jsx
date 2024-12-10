@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/9 19:35:42
+// - 2024/12/10 15:45:45
 
 (function() {
     var __assign = function() {
@@ -570,12 +570,28 @@
     function logJson(object) {
         writeJson(createPath(pathDesktop.toString(), "soil_log.json"), object);
     }
+    function getTextDocumentValue(value) {
+        return {
+            text: value.text,
+            applyFill: value.applyFill,
+            applyStroke: value.applyStroke,
+            font: value.font,
+            fontSize: value.fontSize,
+            justification: value.justification,
+            leading: value.leading,
+            tracking: value.tracking,
+            fillColor: value.applyFill ? value.fillColor : undefined,
+            strokeColor: value.applyStroke ? value.strokeColor : undefined,
+            strokeOverFill: value.applyStroke ? value.strokeOverFill : undefined,
+            strokeWidth: value.applyStroke ? value.strokeWidth : undefined,
+            boxTextSize: value.boxText ? value.boxTextSize : undefined
+        };
+    }
     var firstLayer = getFirstSelectedLayer();
     var selfKey = "S0000 selfProperty";
     if (isLayer(firstLayer)) {
         var dataObject = getRootPropertyData(firstLayer);
-        $.writeln(stringify(dataObject));
-        logJson(getLayerDataOld(firstLayer));
+        logJson(dataObject);
     } else {
         $.writeln("请选择图层");
     }
@@ -597,15 +613,6 @@
         } else if (canSetPropertyValue(property) && property.isModified) {
             var key = "P".concat(padStart((index === null || index === void 0 ? void 0 : index.toString()) || "1", 4, "0"), " ").concat(matchName);
             data[key] = getPropertyData(property);
-        }
-        return data;
-    }
-    function getLayerDataOld(layer) {
-        var data = {};
-        for (var i = 1; i <= layer.numProperties; i++) {
-            var property = getProperty(layer, [ i ]);
-            var propertyData = processProperty(property, i);
-            data = __assign(__assign({}, data), propertyData);
         }
         return data;
     }
@@ -662,7 +669,17 @@
                 }
                 if (isCompLayer(layer)) {}
             } else if (isTextLayer(layer)) {
-                data = __assign(__assign({}, data), manualGetRootPropertyData(layer.text));
+                var textObject = manualGetRootPropertyData(layer.text);
+                var textDocument = textObject["G0002 ADBE Text Properties"]["P0001 ADBE Text Document"];
+                if (textDocument.value) {
+                    textDocument.value = getTextDocumentValue(textDocument.value);
+                } else if (textDocument.Keyframe) {
+                    textDocument.Keyframe = forEach(textDocument.Keyframe, function(Keyframe) {
+                        Keyframe.keyValue = getTextDocumentValue(Keyframe.keyValue);
+                    });
+                }
+                textObject["G0002 ADBE Text Properties"]["P0001 ADBE Text Document"] = textDocument;
+                data = __assign(__assign({}, data), textObject);
             } else if (isShapeLayer(layer)) {
                 data = __assign(__assign({}, data), manualGetRootPropertyData(getProperty(layer, [ "ADBE Root Vectors Group" ])));
             }

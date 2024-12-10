@@ -1,5 +1,5 @@
 import * as _ from 'soil-ts';
-import * as ul from 'utilsLibrary';
+import { sortLayersByIndex, sortLayersByName } from '../Library/Library';
 
 // 防止自动清理清理【它所认为的无关代码】而做的特殊处理
 const getStr = (str: string): string => str;
@@ -17,8 +17,8 @@ const isAllCompLayer = (layerArray: Layer[]): layerArray is AVLayer[] =>
 const sortAndSetLayerTimes = (layers: Layer[], sortMode: "index" | "name", frameDuration: number) => {
     // 根据排序模式排序图层
     let sortedLayers = (sortMode === 'index')
-        ? ul.sortLayersByIndex(layers, "desc")
-        : ul.sortLayersByName(layers, "asc"); // 使用字典顺序
+        ? sortLayersByIndex(layers, "desc")
+        : sortLayersByName(layers, "asc"); // 使用字典顺序
 
     // 初始化开始时间
     let currentStartTime = 0;

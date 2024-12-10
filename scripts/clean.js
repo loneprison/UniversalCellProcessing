@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 // 定义要检查的目录
-const directories = ['./src', './utilsLibrary'];
+const directories = ['./src'];
 
 // 获取指定目录及其子目录中的所有文件
 function getAllFiles(dirPath, arrayOfFiles = []) {

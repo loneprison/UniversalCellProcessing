@@ -1,5 +1,4 @@
 import * as _ from 'soil-ts';
-import * as ul from 'utilsLibrary';
 
 const firstLayer = _.getFirstSelectedLayer()
 

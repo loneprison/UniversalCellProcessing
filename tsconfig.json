@@ -5,11 +5,6 @@
         "noLib": true,
         "types": [
             "types-for-adobe/AfterEffects/23.0"
-        ],
-        "paths": {
-            "utilsLibrary": [
-                "./utilsLibrary/utilsLibrary.ts"
-            ]
-        }
+        ]
     }
 }

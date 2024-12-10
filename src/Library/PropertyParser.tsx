@@ -1,27 +1,34 @@
 import * as _ from 'soil-ts';
-import * as ul from 'utilsLibrary';
-/*
-    该模块属于功能缺失的状态
-    实在不想写了先搁置
-    目前已知问题
-        3.无法读取文本属性，严格来说是无法读取源文本，需要手动进行干预排除
-        4.当位置属性没开启分离状态时候，分离状态的属性值会被读取为"propertyValue": 0,但按理说这种情况就不应该被读取
-        5.当图层样式未开启的状态，混合选项依然会被错误的读取出来
-*/
+import { getTextDocumentValue } from './Library';
 
 const firstLayer = _.getFirstSelectedLayer();
 const selfKey = "S0000 selfProperty"
 
 if (_.isLayer(firstLayer)) {
     const dataObject = getRootPropertyData(firstLayer)
-    $.writeln(_.stringify(dataObject))
-    _.logJson(getLayerDataOld(firstLayer))
+    _.logJson(dataObject)
 } else {
     $.writeln("请选择图层")
 }
 
 
-function getRootPropertyData(rootProperty: _PropertyClasses): PropertyDataStructure {
+/**
+ * 根据给定的图层属性，获取其根属性数据,平时请使用getRootPropertyData,这个函数是为了做手动干预而存在的。
+ * 
+ * 该函数根据 `rootProperty` 的类型（`CanSetValueProperty` 或 `PropertyGroup`）来获取对应的属性数据。根据 `isModified` 参数判断是否强制读取属性数据。
+ * 如果 `isModified` 为 `true`，则强制读取该属性。
+ *
+ * @param {_PropertyClasses} rootProperty 目标根属性,不一定需要传属性,也可以传图层
+ * @returns {PropertyDataStructure} 包含根属性数据的对象。
+ * @example
+ *  if (_.isLayer(firstLayer)) {
+ *     const dataObject = getRootPropertyData(firstLayer)
+ *     _.logJson(dataObject)
+ * } else {
+ *     $.writeln("请选择图层")
+ * }
+ */
+export function getRootPropertyData(rootProperty: _PropertyClasses): PropertyDataStructure {
     let data: PropertyDataStructure = {};
     if (_.isProperty(rootProperty) || _.isPropertyGroup(rootProperty)) {
         data = processProperty(rootProperty);
@@ -48,7 +55,8 @@ function processProperty(property: _PropertyClasses | PropertyGroup, index?: num
     return data;
 }
 
-function getLayerDataOld(layer: Layer): PropertyDataStructure {
+
+export function getLayerDataOld(layer: Layer): PropertyDataStructure {
     let data: PropertyDataStructure = {};
 
     for (let i = 1; i <= layer.numProperties; i++) {
@@ -58,17 +66,11 @@ function getLayerDataOld(layer: Layer): PropertyDataStructure {
     }
     return data
 }
-function getLayerData(layer: Layer): PropertyDataStructure {
-    let data: PropertyDataStructure = {};
 
-    //  除了文本层的的源文本会读取错误以及图层样式是永远被读取的两个问题
-    //  用这个方法读取事实上是没有问题的
-    //  但是为了保证不读取无用数据这里使用人工排除/筛选根属性的方法
-    //  for(let i = 1;i<=layer.numProperties;i++){
-    //      const property = _.getProperty(layer, [i]);
-    //      const propertyData = processProperty(property, i);
-    //      data = { ...data, ...propertyData };
-    //   }
+
+function getLayerData(layer: Layer): PropertyDataStructure {
+
+    let data: PropertyDataStructure = {};
 
     // Marker不应该空标记做value的读取
     const marker = layer.marker
@@ -167,12 +169,23 @@ function getLayerData(layer: Layer): PropertyDataStructure {
             }
 
             if (_.isCompLayer(layer)) {
-                // 读取子合成是个体力活...
+                // 暂时还不想写多图层读取,因此合成的子图层暂且搁置
             }
 
         } else if (_.isTextLayer(layer)) {
-            // 需要人工排除Text暂未实现
-            data = { ...data, ...manualGetRootPropertyData((layer as TextLayer).text) }
+            // 需要人工排除Text属性
+            let textObject = manualGetRootPropertyData((layer as TextLayer).text)
+            let textDocument = textObject['G0002 ADBE Text Properties']['P0001 ADBE Text Document'] as PropertyValueData
+            if (textDocument.value) {
+                textDocument.value = getTextDocumentValue(textDocument.value)
+            } else if (textDocument.Keyframe) {
+                textDocument.Keyframe = _.forEach(textDocument.Keyframe,(Keyframe)=>{
+                    Keyframe.keyValue = getTextDocumentValue(Keyframe.keyValue)
+                })
+            }
+            textObject['G0002 ADBE Text Properties']['P0001 ADBE Text Document'] = textDocument
+
+            data = { ...data, ...textObject }
         } else if (_.isShapeLayer(layer)) {
             // 形状图层内容,没问题
             data = { ...data, ...manualGetRootPropertyData(_.getProperty(layer, ["ADBE Root Vectors Group"])) }
