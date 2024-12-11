@@ -9,8 +9,89 @@
 (function() {
     var objectProto = Object.prototype;
     var hasOwnProperty = objectProto.hasOwnProperty;
+    var nativeToString = objectProto.toString;
+    var INFINITY = 1 / 0;
+    var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
+    var reIsPlainProp = /^\w*$/;
+    var charCodeOfDot = ".".charCodeAt(0);
+    var reEscapeChar = /\\(\\)?/g;
+    var rePropName = /[^.[\]]+|\[(?:([^"'][^[]*)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
     function has(object, key) {
         return object != null && hasOwnProperty.call(object, key);
+    }
+    function getTag(value) {
+        if (value == null) {
+            return value === undefined ? "[object Undefined]" : "[object Null]";
+        }
+        return nativeToString.call(value);
+    }
+    function isArray(value) {
+        return getTag(value) == "[object Array]";
+    }
+    function or() {
+        var index = -1;
+        var length = arguments.length;
+        while (++index < length) {
+            if (arguments[index]) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function isKey(value, object) {
+        if (isArray(value)) {
+            return false;
+        }
+        var type = typeof value;
+        if (type === "number" || type === "boolean" || value == null) {
+            return true;
+        }
+        return or(reIsPlainProp.test(value), !reIsDeepProp.test(value), object != null && value in Object(object));
+    }
+    function trimString(string) {
+        return string.replace(/^\s+/, "").replace(/\s+$/, "");
+    }
+    function stringToPath(string) {
+        var result = [];
+        if (string.charCodeAt(0) === charCodeOfDot) {
+            result.push("");
+        }
+        string.replace(rePropName, function(match, expression, quote, subString) {
+            var key = match;
+            if (quote) {
+                key = subString.replace(reEscapeChar, "$1");
+            } else if (expression) {
+                key = trimString(expression);
+            }
+            result.push(key);
+        });
+        return result;
+    }
+    function castPath(value, object) {
+        if (isArray(value)) {
+            return value;
+        }
+        return isKey(value, object) ? [ value ] : stringToPath(value);
+    }
+    function toKey(value) {
+        if (typeof value === "string") {
+            return value;
+        }
+        var result = "".concat(value);
+        return result == "0" && 1 / value == -INFINITY ? "-0" : result;
+    }
+    function baseGet(object, path) {
+        var partial = castPath(path, object);
+        var index = 0;
+        var length = partial.length;
+        while (object != null && index < length) {
+            object = object[toKey(partial[index++])];
+        }
+        return index && index == length ? object : undefined;
+    }
+    function get(object, path, defaultValue) {
+        var result = object == null ? undefined : baseGet(object, path);
+        return result === undefined ? defaultValue : result;
     }
     function forOwn(object, iteratee) {
         for (var key in object) {
@@ -58,19 +139,13 @@
         return index && index === length ? nested : undefined;
     }
     var isProperty = createIsNativeType(Property);
-    function getActiveItem() {
-        return app.project.activeItem;
+    function createGetAppProperty(path) {
+        return function() {
+            return get(app, path);
+        };
     }
-    function getActiveComp() {
-        var item = getActiveItem();
-        return isCompItem(item) ? item : undefined;
-    }
+    var getFirstSelectedLayer = createGetAppProperty([ "project", "activeItem", "selectedLayers", "0" ]);
     var isTextDocument = createIsNativeType(TextDocument);
-    function setUndoGroup(undoString, func) {
-        app.beginUndoGroup(undoString);
-        func();
-        app.endUndoGroup();
-    }
     function setPropertyValueByData(property, dataObject) {
         if (has(dataObject, "value")) {
             if (isTextDocument(property.value)) {
@@ -119,60 +194,34 @@
             }
         });
     }
-    function showError(message) {
-        alert(message);
-    }
-    var frameSize = [ 1920, 1080 ];
-    var framePropertyData = {
-        "S0000 selfProperty": {
-            name: "frame"
-        },
-        "G0001 ADBE Root Vectors Group": {
-            "G0001 ADBE Vector Group": {
-                "S0000 selfProperty": {
-                    "name": "frame"
-                },
-                "G0002 ADBE Vectors Group": {
-                    "G0001 ADBE Vector Shape - Rect": {
-                        "P0002 ADBE Vector Rect Size": {
-                            "expression": "[thisComp.width,thisComp.height]"
-                        }
-                    },
-                    "G0002 ADBE Vector Shape - Rect": {
-                        "P0002 ADBE Vector Rect Size": {
-                            "value": frameSize
-                        }
-                    },
-                    "G0003 ADBE Vector Filter - Merge": {
-                        "P0001 ADBE Vector Merge Type": {
-                            "value": 5
-                        }
-                    },
-                    "G0004 ADBE Vector Graphic - Fill": {
-                        "P0004 ADBE Vector Fill Color": {
-                            "value": [ 0.13725490868092, 0.13725490868092, 0.13725490868092, 1 ]
-                        }
-                    }
-                }
+    var firstLayer = getFirstSelectedLayer();
+    var data = {
+        "G0005 ADBE Transform Group": {
+            "P0002 ADBE Position": {
+                "name": "位置",
+                "value": [ 428, 410, 0 ]
             }
         },
-        "G0002 ADBE Transform Group": {
-            "P0001 ADBE Opacity": {
-                "value": 80
+        "G0002 ADBE Text Properties": {
+            "P0001 ADBE Text Document": {
+                "name": "源文本",
+                "value": {
+                    "text": "文本动画",
+                    "applyFill": true,
+                    "applyStroke": false,
+                    "font": "MaokenZhuyuanTi-Regular",
+                    "fontSize": 50,
+                    "justification": 7415,
+                    "leading": 45,
+                    "tracking": 150,
+                    "fillColor": [ 1, 1, 1 ],
+                    "strokeColor": null,
+                    "strokeOverFill": null,
+                    "strokeWidth": null,
+                    "boxTextSize": null
+                }
             }
         }
     };
-    function createFrameLayer(nowItem) {
-        var shapeLayer = nowItem.layers.addShape();
-        setPropertyByData(shapeLayer, framePropertyData);
-        shapeLayer.guideLayer = true;
-    }
-    function main() {
-        var nowItem = getActiveComp();
-        if (!nowItem || !isCompItem(nowItem)) {
-            return showError("请先选择一个图层/合成");
-        }
-        createFrameLayer(nowItem);
-    }
-    setUndoGroup("newFrameLayer", main);
+    setPropertyByData(firstLayer, data);
 }).call(this);

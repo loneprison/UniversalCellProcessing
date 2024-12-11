@@ -4,7 +4,7 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/11/29 15:14:51
+// - 2024/12/11 16:59:52
 
 (function() {
     var objectProto = Object.prototype;

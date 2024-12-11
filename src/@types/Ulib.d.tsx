@@ -406,11 +406,11 @@ interface RasterLayerMetadata extends BaseLayerMetadata {
  * ```
  */
 interface PropertyDataStructure {
-    [key: string]: PropertyValueData | PropertyDataStructure | PropertyMetadata;
+    [key: string]: PropertyValueData | PropertyDataStructure | (PropertyMetadata & any);
 }
 
 // 我不会写继承，所以就手写了
-type canSetTextDocument ={
+type canSetTextDocumentData ={
   text?: string
   applyFill?: boolean
   applyStroke?: boolean

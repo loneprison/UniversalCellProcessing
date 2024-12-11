@@ -1,5 +1,5 @@
 import * as _ from 'soil-ts';
-import { sortLayersByIndex, sortLayersByName } from '../Library/Library';
+import { sortLayersByIndex, sortLayersByName } from '../.Library/Library';
 
 // 防止自动清理清理【它所认为的无关代码】而做的特殊处理
 const getStr = (str: string): string => str;

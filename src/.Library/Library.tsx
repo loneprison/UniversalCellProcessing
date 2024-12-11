@@ -144,10 +144,22 @@ export function canSetTimeRemapEnabled(layer: RasterLayer): boolean {
 
 
 
-function setPropertyValue(property: Property, dataObject: PropertyValueData) {
+function setPropertyValueByData(property: Property, dataObject: PropertyValueData) {
     // 设置 property 的值
     if (_.has(dataObject, 'value')) {
-        property.setValue(dataObject.value)
+        // 由于文字图层的特殊性，最好的选择是直接在原属性上更改
+        if (_.isTextDocument(property.value)) {
+            const textObject = dataObject.value as canSetTextDocumentData
+            const textValue = property.value
+            _.forOwn(textObject, (value, key) => {
+                if (value) {
+                    textValue[key] = value
+                }
+            })
+            property.setValue(textValue)
+        } else {
+            property.setValue(dataObject.value)
+        }
     }
 
     // 设置表达式
@@ -217,7 +229,7 @@ export function setPropertyByData(rootProperty: _PropertyClasses, propertyData: 
             setPropertyByData(subProperty, value as PropertyDataStructure)
         } else if (_.startsWith(key, "P", 0)) {
             if (_.isProperty(subProperty)) {
-                setPropertyValue(subProperty, (value as PropertyValueData))
+                setPropertyValueByData(subProperty, (value as PropertyValueData))
             } else {
                 alert(`在${key}键上遇到了错误\n该属性不为Property`)
             }
@@ -239,7 +251,7 @@ export function setPropertyByData(rootProperty: _PropertyClasses, propertyData: 
 
 
 
-export function getTextDocumentValue(value: TextDocument): canSetTextDocument {
+export function getTextDocumentValue(value: TextDocument): canSetTextDocumentData {
     return {
         text: value.text,
         applyFill: value.applyFill,
@@ -429,6 +441,54 @@ export function sortLayersByName(layerArray: Layer[], order: string = 'asc'): La
 
         // 如果没有数字，则按字母部分排序
         return order === 'asc' ? keyA.text.localeCompare(keyB.text) : keyB.text.localeCompare(keyA.text);
+    });
+}
+
+
+
+// 定义排序函数，支持传入自定义排序规则
+function baseSortObjectKeys<T extends Record<string, any>>(
+    obj: T,
+    customSort?: (a: string, b: string) => number // 自定义排序规则
+): T {
+    // 获取并排序对象的键名，使用传入的自定义排序规则
+    const sortedKeys = customSort
+        ? _.keys(obj).sort(customSort) // 如果传入自定义排序规则，使用它
+        : _.keys(obj).sort(); // 否则按默认字典顺序排序
+
+    // 重新生成排序后的对象
+    const sortedObj: Record<string, any> = {};
+
+    _.forEach(sortedKeys, (key) => {
+        sortedObj[key] = obj[key];
+    });
+
+    return sortedObj as T; // 确保返回的类型是与输入一致的
+}
+
+
+
+
+/**
+ * 根据键中数字部分的大小对对象的键进行排序，如果数字部分相同则按字母顺序排序。
+ *
+ * @param {Record<string, any>} object 要排序的对象
+ * @returns {Record<string, any>} 排序后的对象
+ * @example
+ * const obj = { 'key10': 1, 'key2': 2, 'key1': 3 };
+ * const sortedObj = sortObjectKeysByData(obj);
+ * // sortedObj = { 'key1': 3, 'key2': 2, 'key10': 1 }
+ */
+export function sortObjectKeysByData(object:Record<string, any>) {
+    return baseSortObjectKeys(object, (a: string, b: string) => {
+        const numA = parseInt(a.match(/\d+/)?.[0] || "0", 10);
+        const numB = parseInt(b.match(/\d+/)?.[0] || "0", 10);
+
+        if (numA === numB) {
+            return a.localeCompare(b); // 字母排序
+        }
+
+        return numA - numB; // 数字排序
     });
 }
 

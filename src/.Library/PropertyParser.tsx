@@ -1,16 +1,8 @@
 import * as _ from 'soil-ts';
-import { getTextDocumentValue } from './Library';
+import { getTextDocumentValue, sortObjectKeysByData } from './Library';
 
-const firstLayer = _.getFirstSelectedLayer();
+
 const selfKey = "S0000 selfProperty"
-
-if (_.isLayer(firstLayer)) {
-    const dataObject = getRootPropertyData(firstLayer)
-    _.logJson(dataObject)
-} else {
-    $.writeln("请选择图层")
-}
-
 
 /**
  * 根据给定的图层属性，获取其根属性数据,平时请使用getRootPropertyData,这个函数是为了做手动干预而存在的。
@@ -201,7 +193,7 @@ function getLayerData(layer: Layer): PropertyDataStructure {
         }
     }
 
-    return data;
+    return sortObjectKeysByData(data);
 }
 
 /**
@@ -266,16 +258,20 @@ function getPropertyGroupData(propertyGroup: PropertyGroup): PropertyDataStructu
     return data;
 }
 
-function getSelfMetadata(propertyGroup: PropertyGroup): PropertyMetadata {
+function getSelfMetadata(propertyGroup: PropertyGroup,readName:boolean = false): PropertyMetadata {
     let data: PropertyMetadata = {};
     if (propertyGroup.canSetEnabled) data.enabled = propertyGroup.enabled;
-    if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))) data.name = propertyGroup.name;
+    if(readName){
+         data.name = propertyGroup.name;
+    }else if (_.isNamedGroupType(propertyGroup) && _.isIndexedGroupType(propertyGroup.propertyGroup(1))){
+        data.name = propertyGroup.name;
+    }
 
     return data;
 }
 
 function getSelfMetadataByBaseLayer(layer: Layer): BaseLayerMetadata {
-    let data: BaseLayerMetadata = getSelfMetadata(layer);
+    let data: BaseLayerMetadata = getSelfMetadata(layer,true);
 
     return {
         ...data,
@@ -284,7 +280,7 @@ function getSelfMetadataByBaseLayer(layer: Layer): BaseLayerMetadata {
         outPoint: layer.outPoint,
         startTime: layer.startTime,
         stretch: layer.stretch,
-        time: layer.time,
+        //time: layer.time,         readOnly
         label: layer.label,
         locked: layer.locked,
         shy: layer.shy,
@@ -307,7 +303,7 @@ function getSelfMetadataByRasterLayer(layer: RasterLayer): RasterLayerMetadata {
         audioEnabled: layer.audioEnabled,
         blendingMode: layer.blendingMode,
         effectsActive: layer.effectsActive,
-        environmentLayer: layer.environmentLayer,
+        //environmentLayer: layer.environmentLayer,         需要特殊判断，反正二维片不常用就不管了
         frameBlendingType: layer.frameBlendingType,
         timeRemapEnabled: layer.timeRemapEnabled,
         threeDLayer: layer.threeDLayer,

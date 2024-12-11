@@ -4,23 +4,9 @@
 
 // 脚本作者: loneprison (qq: 769049918)
 // Github: {未填写/未公开}
-// - 2024/12/10 15:45:45
+// - 2024/12/11 17:27:50
 
 (function() {
-    var __assign = function() {
-        __assign = Object.assign || function __assign(t) {
-            for (var s, i = 1, n = arguments.length; i < n; i++) {
-                s = arguments[i];
-                for (var p in s) {
-                    if (Object.prototype.hasOwnProperty.call(s, p)) {
-                        t[p] = s[p];
-                    }
-                }
-            }
-            return t;
-        };
-        return __assign.apply(this, arguments);
-    };
     var arrayProto = Array.prototype;
     var objectProto = Object.prototype;
     var hasOwnProperty = objectProto.hasOwnProperty;
@@ -570,6 +556,20 @@
     function logJson(object) {
         writeJson(createPath(pathDesktop.toString(), "soil_log.json"), object);
     }
+    var __assign = function() {
+        __assign = Object.assign || function __assign(t) {
+            for (var s, i = 1, n = arguments.length; i < n; i++) {
+                s = arguments[i];
+                for (var p in s) {
+                    if (Object.prototype.hasOwnProperty.call(s, p)) {
+                        t[p] = s[p];
+                    }
+                }
+            }
+            return t;
+        };
+        return __assign.apply(this, arguments);
+    };
     function getTextDocumentValue(value) {
         return {
             text: value.text,
@@ -587,14 +587,26 @@
             boxTextSize: value.boxText ? value.boxTextSize : undefined
         };
     }
-    var firstLayer = getFirstSelectedLayer();
-    var selfKey = "S0000 selfProperty";
-    if (isLayer(firstLayer)) {
-        var dataObject = getRootPropertyData(firstLayer);
-        logJson(dataObject);
-    } else {
-        $.writeln("请选择图层");
+    function baseSortObjectKeys(obj, customSort) {
+        var sortedKeys = customSort ? keys(obj).sort(customSort) : keys(obj).sort();
+        var sortedObj = {};
+        forEach(sortedKeys, function(key) {
+            sortedObj[key] = obj[key];
+        });
+        return sortedObj;
     }
+    function sortObjectKeysByData(object) {
+        return baseSortObjectKeys(object, function(a, b) {
+            var _a, _b;
+            var numA = parseInt(((_a = a.match(/\d+/)) === null || _a === void 0 ? void 0 : _a[0]) || "0", 10);
+            var numB = parseInt(((_b = b.match(/\d+/)) === null || _b === void 0 ? void 0 : _b[0]) || "0", 10);
+            if (numA === numB) {
+                return a.localeCompare(b);
+            }
+            return numA - numB;
+        });
+    }
+    var selfKey = "S0000 selfProperty";
     function getRootPropertyData(rootProperty) {
         var data = {};
         if (isProperty(rootProperty) || isPropertyGroup(rootProperty)) {
@@ -691,7 +703,7 @@
                 data = __assign(__assign({}, data), manualGetRootPropertyData(layer.lightOption));
             }
         }
-        return data;
+        return sortObjectKeysByData(data);
     }
     function manualGetRootPropertyData(rootProperty, isModified) {
         if (isModified === void 0) {
@@ -787,5 +799,13 @@
             height: layer.height,
             width: layer.width
         });
+    }
+    var firstLayer = getFirstSelectedLayer();
+    if (isLayer(firstLayer)) {
+        var dataObject = getRootPropertyData(firstLayer);
+        logJson(dataObject);
+        $.writeln("请在桌面查看soil_log.json文件获得结果");
+    } else {
+        $.writeln("请选择图层");
     }
 }).call(this);
